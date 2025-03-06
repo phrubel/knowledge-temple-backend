@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const user = Schema(
@@ -6,21 +6,21 @@ const user = Schema(
     name: {
       type: String,
       // required: "Name Required",
-      default: "",
+      default: '',
     },
     email: {
       type: String,
       // required: "Email Required",
-      default: "",
+      default: '',
     },
     mobile: {
       type: String,
-      required: "Mobile Number Required",
+      required: 'Mobile Number Required',
       unique: true,
     },
     password: {
       type: String,
-      required: "Password Required",
+      required: 'Password Required',
     },
     dob: {
       type: Date,
@@ -29,34 +29,34 @@ const user = Schema(
     profileImg: {
       type: String,
       // required: "Profile image Required",
-      default: "",
+      default: '',
     },
     gender: {
       type: String,
-      default: "",
+      default: '',
       // enum: ["m", "f"],
     },
     stdId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "standard",
+      ref: 'standard',
       // required: "Standard Required",
     },
     boardId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "board",
+      ref: 'board',
       // required: "Board Required",
     },
     subject: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "subject",
+        ref: 'subject',
         // required: "Subject Name Required",
       },
     ],
     activity: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "activity",
+        ref: 'activity',
         // required: "Activity Name Required",
       },
     ],
@@ -73,7 +73,7 @@ const user = Schema(
     },
     lang: {
       type: String,
-      default: "",
+      default: '',
     },
     isVerified: {
       type: Boolean,
@@ -85,12 +85,12 @@ const user = Schema(
     },
     userRole: {
       type: String,
-      enum: ["user", "admin", "both"],
-      default: "user",
+      enum: ['user', 'admin', 'both'],
+      default: 'user',
     },
     referralCode: {
       type: String,
-      required: "Referral Code Required.",
+      required: 'Referral Code Required.',
       unique: true,
     },
     balance: {
@@ -100,16 +100,16 @@ const user = Schema(
     },
     schoolName: {
       type: String,
-      default: "",
+      default: '',
     },
     learningGoal: {
       type: String,
-      default: "",
+      default: '',
     },
   },
   {
     timestamps: true,
-  },
+  }
 );
 
-module.exports = mongoose.model("user", user);
+module.exports = mongoose.model('user', user);

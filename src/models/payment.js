@@ -1,25 +1,29 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const payment = Schema(
   {
     courseId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Course",
-      //   required: true,
+      ref: 'Course',
     },
     quizId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Quiz",
+      ref: 'Quiz',
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
+      ref: 'user',
+      required: true,
+    },
+    paymentFor: {
+      type: String,
+      enum: ['enroll', 'deposit'],
       required: true,
     },
     paymentStatus: {
       type: String,
-      enum: ["Create", "Success", "Failed"],
+      enum: ['Create', 'Success', 'Failed'],
       required: true,
     },
     receiptId: {
@@ -39,10 +43,6 @@ const payment = Schema(
       type: Number,
       required: true,
     },
-    pointsBalance: {
-      type: Number,
-      default: 0,
-    },
     tranResp: {
       type: String,
       //   required: true,
@@ -56,4 +56,4 @@ const payment = Schema(
   }
 );
 
-module.exports = mongoose.model("payment", payment);
+module.exports = mongoose.model('payment', payment);

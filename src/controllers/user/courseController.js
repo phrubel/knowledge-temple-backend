@@ -1,97 +1,85 @@
-"use strict";
+'use strict';
 
-const { APISuccess, APIError } = require("../../utils/responseHandler");
-const { handleError } = require("../../utils/utility");
-const COURSE = require("../../models/courseModel");
-const Constants = require("../../constants/appConstants");
-const Payment = require("../../models/payment");
-const Offer = require("../../models/offerModel");
-const User = require("../../models/userModel");
-const { createOrder } = require("../../utils/paymentHandler");
-const crypto = require("crypto");
-const mongoose = require("mongoose");
-const CourseTracking = require("../../models/courseTracking.model");
+const { APISuccess, APIError } = require('../../utils/responseHandler');
+const { handleError } = require('../../utils/utility');
+const COURSE = require('../../models/courseModel');
+const Constants = require('../../constants/appConstants');
+const Payment = require('../../models/payment');
+const Offer = require('../../models/offerModel');
+const User = require('../../models/userModel');
+const { createOrder } = require('../../utils/paymentHandler');
+const crypto = require('crypto');
+const mongoose = require('mongoose');
+const CourseTracking = require('../../models/courseTracking.model');
 
 exports.getCourses = async function (req, res) {
   try {
     const { page, search, subjectId, standardId, type, courseId } = req.body;
     const { _id: userId } = req.user;
 
-    if (type && type === "S" && !courseId) {
-      throw new APIError(400, "Course Id is required for similar courses");
+    if (type && type === 'S' && !courseId) {
+      throw new APIError(400, 'Course Id is required for similar courses');
     }
 
     const limit = Constants.PAGE_SIZE;
     const skip = (page - 1) * limit;
 
     // Fetch user data
-    const user = await User.findById(userId).populate("stdId").populate("subject");
+    const user = await User.findById(userId)
+      .populate('stdId')
+      .populate('subject');
 
     const query = { isActive: true, lessons: { $exists: true, $ne: [] } };
 
-    if (subjectId && subjectId !== "") {
+    if (subjectId && subjectId !== '') {
       query.subject = subjectId;
     }
-    if (standardId && standardId !== "") {
+    if (standardId && standardId !== '') {
       query.standard = standardId;
     }
 
     // recommended course
-    if (type && type === "R") {
-      if (user.stdId && user.stdId !== "") {
-        query.$or = [
-          { standard: user.stdId },
-          ...query.$or || [],
-        ];
+    if (type && type === 'R') {
+      if (user.stdId && user.stdId !== '') {
+        query.$or = [{ standard: user.stdId }, ...(query.$or || [])];
       }
       if (user.subject && user.subject.length > 0) {
-        query.$or = [
-          { subject: { $in: user.subject } },
-          ...query.$or || [],
-        ];
+        query.$or = [{ subject: { $in: user.subject } }, ...(query.$or || [])];
       }
-      if (user.learningGoal && user.learningGoal !== "") {
+      if (user.learningGoal && user.learningGoal !== '') {
         query.$or = [
-          { features: { $regex: user.learningGoal, $options: "i" } },
-          ...query.$or || [],
+          { features: { $regex: user.learningGoal, $options: 'i' } },
+          ...(query.$or || []),
         ];
       }
     }
     // similar courses
-    if (type && type === "S") {
+    if (type && type === 'S') {
       const course = await COURSE.findById(courseId).lean();
       query._id = { $ne: courseId };
-      if (course.standard && course.standard !== "") {
-        query.$or = [
-          { standard: course.standard },
-          ...query.$or || [],
-        ];
+      if (course.standard && course.standard !== '') {
+        query.$or = [{ standard: course.standard }, ...(query.$or || [])];
       }
-      if (course.subject && course.subject !== "") {
-        query.$or = [
-          { subject: course.subject },
-          ...query.$or || [],
-        ];
+      if (course.subject && course.subject !== '') {
+        query.$or = [{ subject: course.subject }, ...(query.$or || [])];
       }
-      if (course.skillLevel && course.skillLevel !== "") {
-        query.$or = [
-          { skillLevel: course.skillLevel },
-          ...query.$or || [],
-        ];
+      if (course.skillLevel && course.skillLevel !== '') {
+        query.$or = [{ skillLevel: course.skillLevel }, ...(query.$or || [])];
       }
     }
     // search course
     if (search.trim()) {
       query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        ...query.$or || []];
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        ...(query.$or || []),
+      ];
     }
 
     let courses = await COURSE.find(query)
-      .select("-lessons -isActive -createdAt -updatedAt -__v")
-      .populate("subject", "subject")
-      .populate("standard", "std")
+      .select('-lessons -isActive -createdAt -updatedAt -__v')
+      .populate('subject', 'subject')
+      .populate('standard', 'std')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
@@ -105,16 +93,16 @@ exports.getCourses = async function (req, res) {
       courseId: { $nin: [null] },
       // paymentId: { $nin: [null, ""] },
     })
-      .select("courseId userId paymentStatus orderId")
+      .select('courseId userId paymentStatus orderId')
       .lean();
 
     const offers = await Offer.find({ endAt: { $gt: Date.now() } })
-      .select("-quizzes")
+      .select('-quizzes')
       .sort({ createdAt: -1 });
 
     courses = courses.map((course) => {
       const purched = purchedCourses.find(
-        (pc) => pc.courseId.toString() == course._id.toString(),
+        (pc) => pc.courseId.toString() == course._id.toString()
       );
       const ofr = offers.find((ofr) => ofr.courses.includes(course._id));
       return {
@@ -125,11 +113,11 @@ exports.getCourses = async function (req, res) {
     });
 
     return res.status(200).json(
-      new APISuccess(200, "Course fetch Successfully", {
+      new APISuccess(200, 'Course fetch Successfully', {
         docs: courses,
         currentPage: page,
         totalPage: Math.ceil(totalRecords / limit),
-      }),
+      })
     );
   } catch (error) {
     return handleError(res, error);
@@ -142,10 +130,10 @@ exports.getCourseDetail = async function (req, res) {
     const { _id: userId } = req.user;
 
     const course = await COURSE.findById(courseId)
-      .select("-isActive -createdAt -updatedAt -__v")
-      .populate("subject", "subject")
-      .populate("standard", "std")
-      .populate("lessons", "title description materialType materialUrl", {
+      .select('-isActive -createdAt -updatedAt -__v')
+      .populate('subject', 'subject')
+      .populate('standard', 'std')
+      .populate('lessons', 'title description materialType materialUrl', {
         isActive: true,
         isMaterial: false,
       })
@@ -153,7 +141,9 @@ exports.getCourseDetail = async function (req, res) {
 
     const trackedCourse = await CourseTracking.find({ userId, courseId });
     trackedCourse.forEach((tracking) => {
-      const index = course.lessons.findIndex((lesson) => lesson._id.toString() === tracking.lessonId.toString());
+      const index = course.lessons.findIndex(
+        (lesson) => lesson._id.toString() === tracking.lessonId.toString()
+      );
       if (index > -1) {
         course.lessons[index].progress = tracking.status;
       }
@@ -166,7 +156,7 @@ exports.getCourseDetail = async function (req, res) {
       // courseId: { $nin: [null] },
       // paymentId: { $nin: [null, ""] },
     })
-      .select("courseId userId paymentStatus orderId")
+      .select('courseId userId paymentStatus orderId')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -174,27 +164,30 @@ exports.getCourseDetail = async function (req, res) {
       endAt: { $gt: Date.now() },
       courses: { $in: [new mongoose.Types.ObjectId(courseId)] },
     })
-      .select("-quizzes")
+      .select('-quizzes')
       .sort({ createdAt: -1 });
 
     if (!course) {
-      throw new APIError(404, "Course not found");
+      throw new APIError(404, 'Course not found');
     }
 
-    const purchasedUsers = await Payment.find({ courseId, paymentStatus: Constants.SUCCESS })
-      .select("userId")
-      .populate("userId", "name mobile image")
+    const purchasedUsers = await Payment.find({
+      courseId,
+      paymentStatus: Constants.SUCCESS,
+    })
+      .select('userId')
+      .populate('userId', 'name mobile image')
       .limit(10)
       .lean();
 
     course.enrolledStudents = purchasedUsers || [];
 
     return res.status(200).json(
-      new APISuccess(200, "Course fetch Successfully", {
+      new APISuccess(200, 'Course fetch Successfully', {
         ...course,
         ...(offers && { offer: offers }),
         ...(purchedCourses && { payment: purchedCourses }),
-      }),
+      })
     );
   } catch (error) {
     return handleError(res, error);
@@ -209,10 +202,10 @@ exports.enrollCourse = async function (req, res) {
     const course = await COURSE.findOne({
       _id: courseId,
       isActive: true,
-    }).select("price");
+    }).select('price');
 
     if (!course) {
-      throw new APIError(404, "Course not found");
+      throw new APIError(404, 'Course not found');
     }
 
     let ofrPer = 0;
@@ -233,7 +226,7 @@ exports.enrollCourse = async function (req, res) {
     });
 
     if (coursePayment) {
-      throw new APIError(400, "Course already enrolled");
+      throw new APIError(400, 'Course already enrolled');
     }
 
     let finalPrice =
@@ -246,7 +239,7 @@ exports.enrollCourse = async function (req, res) {
     let pointsBalance = 0;
     if (user.balance > 0 && finalPrice > 0) {
       if (finalPrice > user.balance) {
-        finalPrice -= user.balance;
+        finalPrice = finalPrice - user.balance;
         pointsBalance = 0;
       } else {
         pointsBalance = user.balance - finalPrice;
@@ -255,15 +248,15 @@ exports.enrollCourse = async function (req, res) {
     }
 
     if (finalPrice > 0) {
-      const receiptId = "receipt_" + crypto.randomBytes(4).toString("hex");
+      const receiptId = 'receipt_' + crypto.randomBytes(4).toString('hex');
       const order = await createOrder(
         finalPrice,
         Constants.CURRENCY,
-        receiptId,
+        receiptId
       );
 
       if (!order) {
-        throw new APIError(400, "Order not Created.");
+        throw new APIError(400, 'Order not Created.');
       }
 
       await Payment.create({
@@ -273,14 +266,13 @@ exports.enrollCourse = async function (req, res) {
         orderId: order.id,
         amount: order.amount,
         paymentStatus: Constants.CREATE,
-        referCode: referCode || "",
-        pointsBalance: pointsBalance,
+        referCode: referCode || '',
       });
 
       return res.status(200).json(
-        new APISuccess(200, "Course Enrolled Successfully", {
+        new APISuccess(200, 'Course Enrolled Successfully', {
           url: `${Constants.BASE_URL}/checkout?receiptId=${receiptId}`,
-        }),
+        })
       );
     } else {
       await Payment.create({
@@ -289,6 +281,8 @@ exports.enrollCourse = async function (req, res) {
         paymentStatus: Constants.SUCCESS,
         amount: finalPrice,
         tranResp: Constants.SUCCESS,
+        pointsBalance: pointsBalance,
+        referCode: referCode || '',
       });
 
       const payment = await Payment.findOne({
@@ -296,12 +290,12 @@ exports.enrollCourse = async function (req, res) {
         courseId,
         paymentStatus: Constants.SUCCESS,
       })
-        .select("-createdAt -updatedAt -tranResp")
+        .select('-createdAt -updatedAt -tranResp')
         .lean();
 
       return res
         .status(200)
-        .json(new APISuccess(200, "Course Enrolled Successfully", payment));
+        .json(new APISuccess(200, 'Course Enrolled Successfully', payment));
     }
   } catch (error) {
     return handleError(res, error);
@@ -316,19 +310,20 @@ exports.getCourseProgress = async function (req, res) {
     const skip = (pageNo - 1) * Constants.PAGE_SIZE;
 
     const result = await CourseTracking.find({ userId })
-      .select("-__v -createdAt -updatedAt -userId")
+      .select('-__v -createdAt -updatedAt -userId')
       .skip(skip)
-      .populate("courseId", "title")
+      .populate('courseId', 'title')
       .limit(Constants.PAGE_SIZE);
 
     const totalRec = await CourseTracking.countDocuments({ userId });
 
-    return res.status(200).json(new APISuccess(200, "Courses Tracked", {
-      docs: result,
-      total: Math.ceil(totalRec / Constants.PAGE_SIZE),
-      currentPage: pageNo,
-    }));
-
+    return res.status(200).json(
+      new APISuccess(200, 'Courses Tracked', {
+        docs: result,
+        total: Math.ceil(totalRec / Constants.PAGE_SIZE),
+        currentPage: pageNo,
+      })
+    );
   } catch (error) {
     return handleError(res, error);
   }

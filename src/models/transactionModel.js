@@ -1,28 +1,28 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 // transaction history
 const TransactionSchema = mongoose.Schema(
   {
     transactionType: {
       type: String,
-      enum: ['C', 'D'], // Type of transaction
+      enum: ['diposit', 'withdraw', 'credit', 'debit'], // Type of transaction
       required: true,
     },
-    points: {
+    amount: {
       type: Number,
       required: true,
     },
     paymentId: {
       type: mongoose.Schema.Types.ObjectId, // Detailed description of the transaction
-      ref: "payment",
+      ref: 'payment',
     },
     referredBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user", // Optional: ID of related user (e.g., the referred user)
+      ref: 'user', // Optional: ID of related user (e.g., the referred user)
     },
     referredTo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user", // Optional: ID of related user (e.g., the referred user)
+      ref: 'user', // Optional: ID of related user (e.g., the referred user)
     },
     date: {
       type: Date,
@@ -35,4 +35,4 @@ const TransactionSchema = mongoose.Schema(
 );
 
 // Export the models
-module.exports = mongoose.model("Transaction", TransactionSchema);
+module.exports = mongoose.model('Transaction', TransactionSchema);

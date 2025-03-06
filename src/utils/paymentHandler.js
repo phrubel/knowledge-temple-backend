@@ -1,8 +1,7 @@
-"use strict";
+'use strict';
 
-const Razorpay = require("razorpay");
-const { handleError } = require("../utils/utility");
-const Constants = require("../constants/appConstants");
+const Razorpay = require('razorpay');
+const Constants = require('../constants/appConstants');
 
 const razorpay = new Razorpay({
   key_id: Constants.RAZORPAY_KEY_ID,

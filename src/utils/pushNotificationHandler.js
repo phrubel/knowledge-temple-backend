@@ -2,16 +2,16 @@ const admin = require('firebase-admin');
 const FcmToken = require('../models/fcmtokenModel');
 
 // Initialize Firebase Admin SDK
-const serviceAccount = require('../assets/knowledge-temple-firebase-adminsdk.json');
+// const serviceAccount = require('../assets/knowledge-temple-firebase-adminsdk.json');
 
-const initializeFirebaseAdmin = () => {
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-    console.log('Firebase Initialize Success :>> ');
-  }
-};
+// const initializeFirebaseAdmin = () => {
+//   if (!admin.apps.length) {
+//     admin.initializeApp({
+//       credential: admin.credential.cert(serviceAccount),
+//     });
+//     console.log('Firebase Initialize Success :>> ');
+//   }
+// };
 
 const sendPushNotification = async (tokens, title, message) => {
   if (!tokens || tokens.length === 0) {
@@ -49,7 +49,7 @@ const sendPush = async (title, body) => {
 };
 
 module.exports = {
-  initializeFirebaseAdmin,
+  // initializeFirebaseAdmin,
   sendPushNotification,
   sendPush,
 };
