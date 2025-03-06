@@ -98,6 +98,11 @@ const user = Schema(
       default: 0, // Initial wallet balance
       min: 0,
     },
+    points: {
+      type: Number,
+      default: 0, // Initial wallet balance
+      min: 0,
+    },
     schoolName: {
       type: String,
       default: '',

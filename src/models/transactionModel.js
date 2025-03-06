@@ -5,10 +5,14 @@ const TransactionSchema = mongoose.Schema(
   {
     transactionType: {
       type: String,
-      enum: ['diposit', 'withdraw', 'credit', 'debit'], // Type of transaction
+      enum: ['D', 'C'], // Type of transaction
       required: true,
     },
     amount: {
+      type: Number,
+      required: true,
+    },
+    points: {
       type: Number,
       required: true,
     },

@@ -9,6 +9,7 @@ const {
 } = require('razorpay/dist/utils/razorpay-utils');
 const { createOrder } = require('../../utils/paymentHandler');
 const crypto = require('crypto');
+const { Quiz } = require('../../models/quizmodel');
 
 exports.checkout = async (req, res) => {
   try {
@@ -74,13 +75,22 @@ exports.verifyPayout = async (req, res) => {
         { new: true }
       ).lean();
 
+      const quiz = await Quiz.findOne(
+        { _id: payment.quizId, isActive: true },
+        'price bonusPercent'
+      );
+      const course = await Quiz.findOne(
+        { _id: payment.courseId, isActive: true },
+        'price bonusPercent'
+      );
+
       //handle deposit amount
       if (payment.paymentFor === 'deposit') {
         await User.findByIdAndUpdate(payment.userId, {
           $inc: { balance: payment.amount },
         });
         await Transaction.create({
-          transactionType: 'diposit',
+          transactionType: 'D',
           amount: payment.amount,
           paymentId: payment._id,
         });
@@ -88,38 +98,24 @@ exports.verifyPayout = async (req, res) => {
       }
 
       if (payment.paymentFor === 'enroll') {
-        // if (payment.pointsBalance > 0) {
-        //   const referUser = await User.findByIdAndUpdate(
-        //     payment.userId,
-        //     { balance: payment.pointsBalance },
-        //     { new: true }
-        //   );
-        //   await Transaction.create({
-        //     transactionType: 'D',
-        //     points: payment.pointsBalance, // total balance
-        //     paymentId: payment._id,
-        //     referredBy: referUser._id.toString(),
-        //     referredTo: payment.userId,
-        //   });
-        // }
-
-        // await Transaction.create({
-        //   transactionType: 'debit',
-        //   points: payment.amount, // total balance
-        //   paymentId: payment._id,
-        //   referredBy: referUser._id.toString(),
-        //   referredTo: payment.userId,
-        // });
-
         if (payment.referCode) {
+          let points = 0;
+
+          if (quiz) {
+            points = (quiz.price * quiz.bonusPercent) / 100;
+          }
+          if (course) {
+            points = (course.price * course.bonusPercent) / 100;
+          }
+
           const referUser = await User.findOneAndUpdate(
             { referralCode: payment.referCode },
-            { $inc: { balance: 10 } },
+            { $inc: { points: points } },
             { new: true }
           );
           await Transaction.create({
-            transactionType: 'credit',
-            amount: 10,
+            transactionType: 'C',
+            points: points,
             paymentId: payment._id,
             referredBy: referUser._id.toString(),
             referredTo: payment.userId,

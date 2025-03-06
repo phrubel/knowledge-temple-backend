@@ -101,7 +101,10 @@ exports.enrollQuiz = async function (req, res) {
     const { quizId, offerId, referCode } = req.body;
     const { _id: userId } = req.user;
 
-    const quiz = await Quiz.findOne({ _id: quizId, isActive: true }, 'price');
+    const quiz = await Quiz.findOne(
+      { _id: quizId, isActive: true },
+      'price bonusPercent'
+    );
 
     if (!quiz) {
       throw new APIError(404, 'Quiz Not Found');
@@ -194,7 +197,7 @@ exports.enrollQuiz = async function (req, res) {
       });
 
       await Transection.create({
-        transactionType: 'debit',
+        transactionType: 'D',
         amount: user.balance - walletBalance,
         paymentId: newPayment._id,
       });
@@ -202,12 +205,13 @@ exports.enrollQuiz = async function (req, res) {
       if (referCode) {
         const referUser = await User.findOneAndUpdate(
           { referralCode: newPayment.referCode },
-          { $inc: { balance: 10 } },
+          { $inc: { points: 10 } },
           { new: true }
         );
+
         await Transection.create({
-          transactionType: 'credit',
-          amount: 10,
+          transactionType: 'C',
+          points: (quiz.price * quiz.bonusPercent) / 100,
           paymentId: newPayment._id,
           referredBy: referUser._id.toString(),
           referredTo: newPayment.userId,
