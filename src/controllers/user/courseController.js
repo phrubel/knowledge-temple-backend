@@ -236,13 +236,12 @@ exports.enrollCourse = async function (req, res) {
           : course.price
         : course.price;
 
-    let pointsBalance = 0;
+    let walletBalance = 0;
+
+    // console.log(finalPrice, 'First final Price');
     if (user.balance > 0 && finalPrice > 0) {
-      if (finalPrice > user.balance) {
-        finalPrice = finalPrice - user.balance;
-        pointsBalance = 0;
-      } else {
-        pointsBalance = user.balance - finalPrice;
+      if (finalPrice <= user.balance) {
+        walletBalance = user.balance - finalPrice * 100;
         finalPrice = 0;
       }
     }
@@ -260,7 +259,8 @@ exports.enrollCourse = async function (req, res) {
       }
 
       await Payment.create({
-        courseId,
+        paymentFor: 'enroll',
+        quizId,
         userId,
         receiptId,
         orderId: order.id,
@@ -275,15 +275,44 @@ exports.enrollCourse = async function (req, res) {
         })
       );
     } else {
-      await Payment.create({
-        courseId,
+      const newPayment = await Payment.create({
+        paymentFor: 'enroll',
+        quizId,
         userId,
         paymentStatus: Constants.SUCCESS,
         amount: finalPrice,
         tranResp: Constants.SUCCESS,
-        pointsBalance: pointsBalance,
         referCode: referCode || '',
       });
+
+      await User.findByIdAndUpdate(newPayment.userId, {
+        balance: walletBalance,
+      });
+
+      await Transection.create({
+        transactionType: 'D',
+        amount: user.balance - walletBalance,
+        paymentId: newPayment._id,
+      });
+
+      if (referCode) {
+        const points = (quiz.price * quiz.bonusPercent) / 100;
+        const referUser = await User.findOneAndUpdate(
+          { referralCode: newPayment.referCode },
+          { $inc: { points: points } },
+          { new: true }
+        );
+
+        if (points) {
+          await Transection.create({
+            transactionType: 'C',
+            points: points,
+            paymentId: newPayment._id,
+            referredBy: referUser._id.toString(),
+            referredTo: newPayment.userId,
+          });
+        }
+      }
 
       const payment = await Payment.findOne({
         userId,

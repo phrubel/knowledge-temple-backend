@@ -203,13 +203,13 @@ exports.enrollQuiz = async function (req, res) {
       });
 
       if (referCode) {
+        const points = (quiz.price * quiz.bonusPercent) / 100;
         const referUser = await User.findOneAndUpdate(
           { referralCode: newPayment.referCode },
-          { $inc: { points: 10 } },
+          { $inc: { points: points } },
           { new: true }
         );
 
-        const points = (quiz.price * quiz.bonusPercent) / 100;
         if (points) {
           await Transection.create({
             transactionType: 'C',

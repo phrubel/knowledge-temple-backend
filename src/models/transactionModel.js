@@ -10,11 +10,9 @@ const TransactionSchema = mongoose.Schema(
     },
     amount: {
       type: Number,
-      required: true,
     },
     points: {
       type: Number,
-      required: true,
     },
     paymentId: {
       type: mongoose.Schema.Types.ObjectId, // Detailed description of the transaction
