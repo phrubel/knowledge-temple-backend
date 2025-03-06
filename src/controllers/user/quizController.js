@@ -113,7 +113,7 @@ exports.enrollQuiz = async function (req, res) {
       paymentStatus: Constants.SUCCESS,
     });
 
-    const user = User.findById(userId).lean();
+    const user = await User.findById(userId).lean();
 
     if (payment) {
       throw new APIError(400, 'Quiz Already Enrolled.');
@@ -192,7 +192,7 @@ exports.enrollQuiz = async function (req, res) {
       await Transection.create({
         transactionType: 'debit',
         amount: user.balance - walletBalance,
-        paymentId: payment._id,
+        paymentId: newPayment._id,
       });
 
       if (referCode) {
@@ -204,7 +204,7 @@ exports.enrollQuiz = async function (req, res) {
         await Transection.create({
           transactionType: 'credit',
           amount: 10,
-          paymentId: payment._id,
+          paymentId: newPayment._id,
           referredBy: referUser._id.toString(),
           referredTo: newPayment.userId,
         });
