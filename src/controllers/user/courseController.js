@@ -202,7 +202,7 @@ exports.enrollCourse = async function (req, res) {
     const course = await COURSE.findOne({
       _id: courseId,
       isActive: true,
-    }).select('price');
+    }).select('price bonusPercent');
 
     if (!course) {
       throw new APIError(404, 'Course not found');
@@ -260,7 +260,7 @@ exports.enrollCourse = async function (req, res) {
 
       await Payment.create({
         paymentFor: 'enroll',
-        quizId,
+        courseId,
         userId,
         receiptId,
         orderId: order.id,
@@ -277,7 +277,7 @@ exports.enrollCourse = async function (req, res) {
     } else {
       const newPayment = await Payment.create({
         paymentFor: 'enroll',
-        quizId,
+        courseId,
         userId,
         paymentStatus: Constants.SUCCESS,
         amount: finalPrice,
@@ -296,7 +296,7 @@ exports.enrollCourse = async function (req, res) {
       });
 
       if (referCode) {
-        const points = (quiz.price * quiz.bonusPercent) / 100;
+        const points = (course.price * course.bonusPercent) / 100;
         const referUser = await User.findOneAndUpdate(
           { referralCode: newPayment.referCode },
           { $inc: { points: points } },
