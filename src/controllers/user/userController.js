@@ -1,18 +1,21 @@
-"use strict";
+'use strict';
 
-const bcrypt = require("bcryptjs");
-const { generateToken } = require("../authController");
+const bcrypt = require('bcryptjs');
+const { generateToken } = require('../authController');
 const {
-  generateOTP, isValidMobileNumber, handleError,
-} = require("../../utils/utility");
-const { APIError, APISuccess } = require("../../utils/responseHandler");
-const OTP = require("../../models/otpModel");
-const USER = require("../../models/userModel");
-const FCMTOKEN = require("../../models/fcmtokenModel");
-const Constants = require("../../constants/appConstants");
-const QuizResult = require("../../models/resultquizmodel");
-const { sendSMS } = require("../../utils/smsHandler");
-const mongoose = require("mongoose");
+  generateOTP,
+  isValidMobileNumber,
+  handleError,
+} = require('../../utils/utility');
+const { APIError, APISuccess } = require('../../utils/responseHandler');
+const OTP = require('../../models/otpModel');
+const USER = require('../../models/userModel');
+const FCMTOKEN = require('../../models/fcmtokenModel');
+const Constants = require('../../constants/appConstants');
+const QuizResult = require('../../models/resultquizmodel');
+const { sendSMS } = require('../../utils/smsHandler');
+const mongoose = require('mongoose');
+const User = require('../../models/userModel');
 
 exports.getProfile = async function (req, res) {
   try {
@@ -20,41 +23,52 @@ exports.getProfile = async function (req, res) {
 
     // Mark the account as deleted
     const user = await USER.findById(userId)
-      .select("-password -__v -createdAt -updatedAt -isDeleted")
-      .populate("stdId", "std")
-      .populate("boardId", "boardname boardshortname")
-      .populate("subject", "subject")
-      .populate("activity", "activityname")
+      .select('-password -__v -createdAt -updatedAt -isDeleted')
+      .populate('stdId', 'std')
+      .populate('boardId', 'boardname boardshortname')
+      .populate('subject', 'subject')
+      .populate('activity', 'activityname')
       .lean();
 
     if (!user) {
-      throw APIError(400, "User Not Found");
+      throw APIError(400, 'User Not Found');
     }
 
     const profileCompletion = getProfileCompletion(user);
 
     const [highestResult, lowestResult] = await Promise.all([
-      QuizResult.findOne().select("score")
+      QuizResult.findOne()
+        .select('score')
         .sort({ score: -1 })
         .populate({
-          path: "quizId",
-          select: "title description standard subject ageGroup",
-          populate: [{ path: "subject", select: "subject" }, { path: "standard", select: "std" }],
+          path: 'quizId',
+          select: 'title description standard subject ageGroup',
+          populate: [
+            { path: 'subject', select: 'subject' },
+            { path: 'standard', select: 'std' },
+          ],
         }),
-      QuizResult.findOne().select("score")
+      QuizResult.findOne()
+        .select('score')
         .sort({ score: 1 })
         .populate({
-          path: "quizId",
-          select: "title description standard subject ageGroup",
-          populate: [{ path: "subject", select: "subject" }, { path: "standard", select: "std" }],
+          path: 'quizId',
+          select: 'title description standard subject ageGroup',
+          populate: [
+            { path: 'subject', select: 'subject' },
+            { path: 'standard', select: 'std' },
+          ],
         }),
     ]);
 
-    return res.status(200).json(new APISuccess(200, "Profile Fetched.", {
-      ...user, profileCompletion: profileCompletion,
-      highestResult,
-      lowestResult,
-    }));
+    return res.status(200).json(
+      new APISuccess(200, 'Profile Fetched.', {
+        ...user,
+        profileCompletion: profileCompletion,
+        highestResult,
+        lowestResult,
+      })
+    );
   } catch (error) {
     return handleError(res, error);
   }
@@ -66,14 +80,14 @@ exports.getOTP = async function (req, res) {
   try {
     // Validate mobile number
     if (!isValidMobileNumber(mobile)) {
-      throw new APIError(400, "Invalid mobile number format.");
+      throw new APIError(400, 'Invalid mobile number format.');
     }
 
     // isAlready Has User
     const user = await USER.findOne({ mobile });
 
     if (user) {
-      throw new APIError(400, "User Already Registered. Please Sign In!");
+      throw new APIError(400, 'User Already Registered. Please Sign In!');
     }
 
     // Fetch OTP from database
@@ -86,23 +100,25 @@ exports.getOTP = async function (req, res) {
       // Send success response
       return res
         .status(200)
-        .json(new APISuccess(200, "OTP generated successfully.", {}));
+        .json(new APISuccess(200, 'OTP generated successfully.', {}));
     } else {
       // Generate OTP and expiration time
-      const otp = Constants.FAST_API_ENABLE == 1 ? generateOTP() : "123456";
-      const expiredAt = new Date(Date.now() + Constants.OTP_EXPIRED_TIME * 60 * 1000); // OTP valid for 10 minutes
+      const otp = Constants.FAST_API_ENABLE == 1 ? generateOTP() : '123456';
+      const expiredAt = new Date(
+        Date.now() + Constants.OTP_EXPIRED_TIME * 60 * 1000
+      ); // OTP valid for 10 minutes
 
       if (Constants.FAST_API_ENABLE == 1) {
         await sendSMS(mobile, otp);
       }
 
       // Save OTP to database
-      await OTP.create({ mobile, otp, expiredAt, otpType: "signUp" });
+      await OTP.create({ mobile, otp, expiredAt, otpType: 'signUp' });
 
       // Send success response
       return res
         .status(200)
-        .json(new APISuccess(200, "OTP generated successfully.", {}));
+        .json(new APISuccess(200, 'OTP generated successfully.', {}));
     }
   } catch (error) {
     return handleError(res, error);
@@ -116,15 +132,15 @@ exports.forgotPassword = async function (req, res) {
     const user = await USER.findOne({ mobile }).lean();
 
     if (!user) {
-      throw new APIError(400, "Account Not Found.");
+      throw new APIError(400, 'Account Not Found.');
     }
 
     if (user.isBlocked) {
-      throw new APIError(400, "Your Account was blocked.");
+      throw new APIError(400, 'Your Account was blocked.');
     }
 
     if (!user.password) {
-      throw new APIError(400, "Please Create Password First.");
+      throw new APIError(400, 'Please Create Password First.');
     }
 
     // Fetch OTP from database
@@ -136,23 +152,25 @@ exports.forgotPassword = async function (req, res) {
     if (otpRecord && new Date() < otpRecord.expiredAt) {
       return res
         .status(200)
-        .json(new APISuccess(200, "OTP generated successfully.", {}));
+        .json(new APISuccess(200, 'OTP generated successfully.', {}));
     }
 
     // Generate OTP and expiration time
-    const otp = Constants.FAST_API_ENABLE == 1 ? generateOTP() : "123456";
-    const expiredAt = new Date(Date.now() + Constants.OTP_EXPIRED_TIME * 60 * 1000); // OTP valid for 10 minutes
+    const otp = Constants.FAST_API_ENABLE == 1 ? generateOTP() : '123456';
+    const expiredAt = new Date(
+      Date.now() + Constants.OTP_EXPIRED_TIME * 60 * 1000
+    ); // OTP valid for 10 minutes
 
     if (Constants.FAST_API_ENABLE == 1) {
       await sendSMS(mobile, otp);
     }
 
     // Save OTP to database
-    await OTP.create({ mobile, otp, expiredAt, otpType: "forgotPassword" });
+    await OTP.create({ mobile, otp, expiredAt, otpType: 'forgotPassword' });
 
     return res
       .status(200)
-      .json(new APISuccess(200, "OTP generated successfully.", {}));
+      .json(new APISuccess(200, 'OTP generated successfully.', {}));
   } catch (error) {
     return handleError(res, error);
   }
@@ -164,12 +182,12 @@ exports.verifyOTP = async function (req, res) {
   try {
     // Validate mobile number
     if (!isValidMobileNumber(mobile)) {
-      throw new APIError(400, "Invalid mobile number");
+      throw new APIError(400, 'Invalid mobile number');
     }
 
     // Validate OTP length
     if (!otp || otp.length !== 6) {
-      throw new APIError(400, "Invalid OTP format");
+      throw new APIError(400, 'Invalid OTP format');
     }
 
     // Fetch OTP from database
@@ -180,22 +198,24 @@ exports.verifyOTP = async function (req, res) {
       .lean();
 
     if (!otpRecord) {
-      throw new APIError(400, "Invalid OTP or mobile number.");
+      throw new APIError(400, 'Invalid OTP or mobile number.');
     }
 
     // Check OTP expiration
     if (new Date() > otpRecord.expiredAt) {
       await OTP.deleteMany({ mobile });
-      throw new APIError(400, "OTP has expired. Please request a new one.");
+      throw new APIError(400, 'OTP has expired. Please request a new one.');
     }
 
     // now delete all OTP records for this mobile
     await OTP.findOneAndUpdate({ mobile, otp }, { isVerified: true });
 
     // OTP verified successfully
-    return res.status(200).json(new APISuccess(200, "OTP verified successfully.", {
-      verifyId: otpRecord._id,
-    }));
+    return res.status(200).json(
+      new APISuccess(200, 'OTP verified successfully.', {
+        verifyId: otpRecord._id,
+      })
+    );
   } catch (error) {
     return handleError(res, error);
   }
@@ -209,29 +229,36 @@ exports.createPassword = async function (req, res) {
   try {
     // Step 1: Validate input
     if (!mobile || !password) {
-      throw new APIError(400, "Mobile number and password are required.");
+      throw new APIError(400, 'Mobile number and password are required.');
     }
 
     if (!verifyId) {
-      throw new APIError(400, "Verify ID is required.");
+      throw new APIError(400, 'Verify ID is required.');
     }
 
     // Step 2: Validate password constraints
-    const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const passwordRegex =
+      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(password)) {
-      throw new APIError(400, "Password must be at least 8 characters long, include uppercase, lowercase, a number, and a special character.");
+      throw new APIError(
+        400,
+        'Password must be at least 8 characters long, include uppercase, lowercase, a number, and a special character.'
+      );
     }
 
     // check user verified or not
     const user = await USER.findOne({ mobile }).lean();
     const otpRecord = await OTP.findById(verifyId).lean();
 
-    if (!otpRecord || ((!user || !user.isVerified) && otpRecord.otpType !== "signUp")) {
-      throw new APIError(400, "Please Do Register or Login.");
+    if (
+      !otpRecord ||
+      ((!user || !user.isVerified) && otpRecord.otpType !== 'signUp')
+    ) {
+      throw new APIError(400, 'Please Do Register or Login.');
     }
 
     if (!otpRecord || !otpRecord.isVerified) {
-      throw new APIError(400, "Invalid Verification.");
+      throw new APIError(400, 'Invalid Verification.');
     }
 
     // Step 3: Hash the password
@@ -239,24 +266,39 @@ exports.createPassword = async function (req, res) {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     let updatedUser;
     if (!user) {
-      const referralCode = `KT${Math.floor(100000 + Math.random() * 900000).toString()}`;
+      const referralCode = `KT${Math.floor(
+        100000 + Math.random() * 900000
+      ).toString()}`;
       await USER.create({
         mobile: mobile,
         password: hashedPassword,
         isVerified: true,
         lang: xLocalization,
-        userRole: "user",
+        userRole: 'user',
         referralCode: referralCode,
       });
       updatedUser = await USER.findOne({ mobile })
-        .select("-password -__v -createdAt -updatedAt -isDeleted")
+        .select('-password -__v -createdAt -updatedAt -isDeleted')
         .lean();
     } else {
-      updatedUser = await USER.findOneAndUpdate({ mobile }, { password: hashedPassword }, {
-        new: true, projection: {
-          mobile: 1, isVerified: 1, name: 1, email: 1, stdId: 1, boardId: 1, subject: 1, activity: 1, lang: 1,
-        },
-      }).lean();
+      updatedUser = await USER.findOneAndUpdate(
+        { mobile },
+        { password: hashedPassword },
+        {
+          new: true,
+          projection: {
+            mobile: 1,
+            isVerified: 1,
+            name: 1,
+            email: 1,
+            stdId: 1,
+            boardId: 1,
+            subject: 1,
+            activity: 1,
+            lang: 1,
+          },
+        }
+      ).lean();
     }
 
     // Step 5: Generate accessToken and refreshToken
@@ -271,9 +313,13 @@ exports.createPassword = async function (req, res) {
     const profileCompletion = getProfileCompletion(updatedUser);
 
     // Step 6: Return response with tokens
-    return res.status(200).json(new APISuccess(200, "Password Created Successfully.", {
-      ...tokens, ...updatedUser, profileCompletion: profileCompletion,
-    }));
+    return res.status(200).json(
+      new APISuccess(200, 'Password Created Successfully.', {
+        ...tokens,
+        ...updatedUser,
+        profileCompletion: profileCompletion,
+      })
+    );
   } catch (error) {
     return handleError(res, error);
   }
@@ -285,36 +331,58 @@ exports.signIn = async function (req, res) {
   const xLocalization = req.xLocalization;
 
   try {
-    const user = await USER.findOne({ mobile }, {
-      password: 1, mobile: 1, isVerified: 1, name: 1, email: 1, stdId: 1, boardId: 1, subject: 1, activity: 1, lang: 1,
-    }).lean();
+    const user = await USER.findOne(
+      { mobile },
+      {
+        password: 1,
+        mobile: 1,
+        isVerified: 1,
+        name: 1,
+        email: 1,
+        stdId: 1,
+        boardId: 1,
+        subject: 1,
+        activity: 1,
+        lang: 1,
+      }
+    ).lean();
 
     if (!user) {
-      throw new APIError(400, "Account Not Found.");
+      throw new APIError(400, 'Account Not Found.');
     }
 
     if (!user.isVerified) {
-      throw new APIError(400, "Please Sign Up First.");
+      throw new APIError(400, 'Please Sign Up First.');
     }
 
     if (user.isBlocked) {
-      throw new APIError(400, "Your Account was blocked.");
+      throw new APIError(400, 'Your Account was blocked.');
     }
 
     if (!user.password) {
       return res
         .status(400)
-        .json(new APIError(400, "Please Create Password First.", "createPassword", {}).toJson());
+        .json(
+          new APIError(
+            400,
+            'Please Create Password First.',
+            'createPassword',
+            {}
+          ).toJson()
+        );
     }
 
     const isPasswordMatch = await bcrypt.compare(password, user.password);
 
     if (!isPasswordMatch) {
-      throw new APIError(400, "Mobile Number or Password Not Match.");
+      throw new APIError(400, 'Mobile Number or Password Not Match.');
     }
 
     const currentDate = new Date();
-    await USER.findOneAndUpdate({ mobile }, { isActive: true, lastLoginAt: currentDate, lang: xLocalization });
+    await USER.findOneAndUpdate(
+      { mobile },
+      { isActive: true, lastLoginAt: currentDate, lang: xLocalization }
+    );
 
     delete user.password;
 
@@ -326,9 +394,13 @@ exports.signIn = async function (req, res) {
 
     const profileCompletion = getProfileCompletion(user);
 
-    return res.status(200).json(new APISuccess(200, "Sign In Successfully.", {
-      ...tokens, ...user, profileCompletion: profileCompletion,
-    }));
+    return res.status(200).json(
+      new APISuccess(200, 'Sign In Successfully.', {
+        ...tokens,
+        ...user,
+        profileCompletion: profileCompletion,
+      })
+    );
   } catch (error) {
     return handleError(res, error);
   }
@@ -342,8 +414,11 @@ exports.updateProfile = async function (req, res) {
 
     const user = await USER.findById(userId);
 
-    if ((req.user.userRole !== "user" && updateData.email) || updateData.userRole) {
-      throw new APIError(400, "User not allowed to update profile.");
+    if (
+      (req.user.userRole !== 'user' && updateData.email) ||
+      updateData.userRole
+    ) {
+      throw new APIError(400, 'User not allowed to update profile.');
     }
 
     if (user.dob && updateData.dob) {
@@ -351,36 +426,43 @@ exports.updateProfile = async function (req, res) {
     }
 
     // Update user profile
-    const updatedUser = await USER.findByIdAndUpdate(userId, { ...updateData, lang: xLocalization }, {
-      new: true, // Return the updated document
-      runValidators: true, // Ensure validators are applied
-      projection: {
-        mobile: 1,
-        name: 1,
-        email: 1,
-        stdId: 1,
-        boardId: 1,
-        subject: 1,
-        activity: 1,
-        lang: 1,
-        dob: 1,
-        schoolName: 1,
-        learningGoal: 1,
-        gender: 1,
-      },
-    })
-      .populate("stdId", "std")
-      .populate("boardId", "boardname boardshortname")
-      .populate("subject", "subject")
-      .populate("activity", "activityname")
+    const updatedUser = await USER.findByIdAndUpdate(
+      userId,
+      { ...updateData, lang: xLocalization },
+      {
+        new: true, // Return the updated document
+        runValidators: true, // Ensure validators are applied
+        projection: {
+          mobile: 1,
+          name: 1,
+          email: 1,
+          stdId: 1,
+          boardId: 1,
+          subject: 1,
+          activity: 1,
+          lang: 1,
+          dob: 1,
+          schoolName: 1,
+          learningGoal: 1,
+          gender: 1,
+        },
+      }
+    )
+      .populate('stdId', 'std')
+      .populate('boardId', 'boardname boardshortname')
+      .populate('subject', 'subject')
+      .populate('activity', 'activityname')
       .lean();
 
     const profileCompletion = getProfileCompletion(updatedUser);
 
     // Response data
-    return res.status(200).json(new APISuccess(200, "User profile updated successfully", {
-      ...updatedUser, profileCompletion: profileCompletion,
-    }));
+    return res.status(200).json(
+      new APISuccess(200, 'User profile updated successfully', {
+        ...updatedUser,
+        profileCompletion: profileCompletion,
+      })
+    );
   } catch (error) {
     return handleError(res, error);
   }
@@ -392,16 +474,17 @@ exports.deleteAccount = async function (req, res) {
 
     // Mark the account as deleted
     const deletedUser = await USER.findByIdAndUpdate(userId, {
-      isDeleted: true, deletedAt: new Date(),
+      isDeleted: true,
+      deletedAt: new Date(),
     });
 
     if (!deletedUser) {
-      throw new APIError(400, "User not Found");
+      throw new APIError(400, 'User not Found');
     }
 
     return res
       .status(200)
-      .json(APISuccess(200, "Account deleted successfully", {}));
+      .json(APISuccess(200, 'Account deleted successfully', {}));
   } catch (error) {
     return handleError(res, error);
   }
@@ -416,12 +499,12 @@ exports.logout = async function (req, res) {
 
     if (existingToken) {
       // Mark the token as inactive
-      existingToken.fcmToken = "";
+      existingToken.fcmToken = '';
       existingToken.isActive = false;
       await existingToken.save();
     }
 
-    return res.status(200).json(new APISuccess(200, "Logout Successfully", {}));
+    return res.status(200).json(new APISuccess(200, 'Logout Successfully', {}));
   } catch (error) {
     return handleError(res, error);
   }
@@ -435,14 +518,15 @@ exports.changePassword = async function (req, res) {
     const user = await USER.findById(userId);
     const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isPasswordMatch) {
-      throw new APIError(400, "Old Password Not Match.");
+      throw new APIError(400, 'Old Password Not Match.');
     }
 
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
     await USER.findByIdAndUpdate(userId, { password: hashedPassword });
-    return res.status(200).json(new APISuccess(200, "Password Changed Successfully", {}));
-
+    return res
+      .status(200)
+      .json(new APISuccess(200, 'Password Changed Successfully', {}));
   } catch (error) {
     return handleError(res, error);
   }
@@ -461,7 +545,9 @@ async function storeUserToken(userId, deviceType, fcmToken) {
     } else {
       // Create a new token
       const newToken = new FCMTOKEN({
-        userId, fcmToken, deviceType,
+        userId,
+        fcmToken,
+        deviceType,
       });
       await newToken.save();
     }
@@ -482,3 +568,27 @@ function getProfileCompletion(user) {
 
   return profileCompletion;
 }
+
+exports.convertPoints = async function (req, res) {
+  try {
+    const { _id } = req.user;
+
+    const user = await User.findById(_id);
+
+    if (user.points < 100) {
+      throw new APIError(400, 'Insufficient points');
+    }
+
+    await User.findByIdAndUpdate(
+      _id,
+      { $inc: { balance: user.points }, points: 0 },
+      { new: true }
+    );
+
+    return res
+      .status(200)
+      .json(new APISuccess(200, 'User points converted successfully'));
+  } catch (error) {
+    return handleError(res, error);
+  }
+};

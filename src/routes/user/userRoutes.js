@@ -1,29 +1,31 @@
-"use strict";
+'use strict';
 
-const router = require("express").Router();
-const userController = require("../../controllers/user/userController");
-const { authorization } = require("../../middlewares/authMiddlewares");
+const router = require('express').Router();
+const userController = require('../../controllers/user/userController');
+const { authorization } = require('../../middlewares/authMiddlewares');
 
-router.get("/getProfile", authorization(), userController.getProfile);
+router.get('/getProfile', authorization(), userController.getProfile);
 
-router.post("/getOtp", userController.getOTP);
+router.post('/getOtp', userController.getOTP);
 
-router.post("/verifyOtp", userController.verifyOTP);
+router.post('/verifyOtp', userController.verifyOTP);
 
-router.post("/createPassword", userController.createPassword);
+router.post('/createPassword', userController.createPassword);
 
-router.put("/updateProfile", authorization(), userController.updateProfile);
+router.put('/updateProfile', authorization(), userController.updateProfile);
 
-router.delete("/deleteAccount", authorization(), userController.deleteAccount);
+router.delete('/deleteAccount', authorization(), userController.deleteAccount);
 
-router.post("/signIn", userController.signIn);
+router.post('/signIn', userController.signIn);
 
-router.post("/forgotPassword", userController.forgotPassword);
+router.post('/forgotPassword', userController.forgotPassword);
 
-router.delete("/deleteAccount", authorization(), userController.deleteAccount);
+router.delete('/deleteAccount', authorization(), userController.deleteAccount);
 
-router.post("/logout", authorization(), userController.logout);
+router.post('/logout', authorization(), userController.logout);
 
-router.post("/changePassword", authorization(), userController.changePassword)
+router.post('/changePassword', authorization(), userController.changePassword);
+
+router.post('/convertPoints', authorization(), userController.convertPoints);
 
 module.exports = router;
