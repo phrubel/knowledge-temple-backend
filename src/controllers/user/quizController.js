@@ -209,13 +209,16 @@ exports.enrollQuiz = async function (req, res) {
           { new: true }
         );
 
-        await Transection.create({
-          transactionType: 'C',
-          points: (quiz.price * quiz.bonusPercent) / 100,
-          paymentId: newPayment._id,
-          referredBy: referUser._id.toString(),
-          referredTo: newPayment.userId,
-        });
+        const points = (quiz.price * quiz.bonusPercent) / 100;
+        if (points) {
+          await Transection.create({
+            transactionType: 'C',
+            points: points,
+            paymentId: newPayment._id,
+            referredBy: referUser._id.toString(),
+            referredTo: newPayment.userId,
+          });
+        }
       }
 
       const payment = await Payment.findOne({

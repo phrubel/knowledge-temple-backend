@@ -107,19 +107,20 @@ exports.verifyPayout = async (req, res) => {
           if (course) {
             points = (course.price * course.bonusPercent) / 100;
           }
-
-          const referUser = await User.findOneAndUpdate(
-            { referralCode: payment.referCode },
-            { $inc: { points: points } },
-            { new: true }
-          );
-          await Transaction.create({
-            transactionType: 'C',
-            points: points,
-            paymentId: payment._id,
-            referredBy: referUser._id.toString(),
-            referredTo: payment.userId,
-          });
+          if (points) {
+            const referUser = await User.findOneAndUpdate(
+              { referralCode: payment.referCode },
+              { $inc: { points: points } },
+              { new: true }
+            );
+            await Transaction.create({
+              transactionType: 'C',
+              points: points,
+              paymentId: payment._id,
+              referredBy: referUser._id.toString(),
+              referredTo: payment.userId,
+            });
+          }
         }
         return res.status(200).json({ status: 'ok' });
       }

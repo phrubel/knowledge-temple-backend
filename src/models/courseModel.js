@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const Course = Schema(
@@ -13,29 +13,30 @@ const Course = Schema(
     thumbnail: { type: String, required: true }, // URL of the course thumbnail
     standard: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "standard",
+      ref: 'standard',
     }, // e.g., "10th Grade"
     subject: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "subject",
+      ref: 'subject',
     }, // e.g., "Mathematics"
     skillLevel: {
       type: String,
       required: true,
-      enum: ["Beginner", "Intermediate", "Advanced"],
+      enum: ['Beginner', 'Intermediate', 'Advanced'],
     }, // e.g., "Beginner"
     lessons: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Lesson",
+        ref: 'Lesson',
         default: [],
       },
     ], // Reference to the Lesson model
     isActive: { type: Boolean, default: true }, // Active or inactive course
+    bonusPercent: { type: Number, default: 0 }, // Indicates if the quiz is active
   },
   {
     timestamps: true, // Automatically add createdAt and updatedAt fields
   }
 );
 
-module.exports = mongoose.model("Course", Course);
+module.exports = mongoose.model('Course', Course);

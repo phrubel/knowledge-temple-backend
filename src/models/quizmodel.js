@@ -1,5 +1,5 @@
 // Import Mongoose
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 // Define the Option Schema for questions
 const OptionSchema = new mongoose.Schema({
@@ -25,14 +25,14 @@ const QuizSchema = new mongoose.Schema(
     description: { type: String }, // Description of the quiz
     standard: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "standard",
+      ref: 'standard',
     }, // e.g., "10th Grade"
     subject: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "subject",
+      ref: 'subject',
     }, // e.g., "Mathematics"
     questions: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "Question", default: [] },
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Question', default: [] },
     ], // Array of questions
     startDate: { type: Date, required: true }, // Quiz start date
     endDate: { type: Date, required: true }, // Quiz end date
@@ -40,6 +40,7 @@ const QuizSchema = new mongoose.Schema(
     duration: { type: Number, default: 0 }, // Duration of the quiz in minutes
     ageGroup: { type: String }, // Age group for the quiz
     isActive: { type: Boolean, default: true }, // Indicates if the quiz is active
+    bonusPercent: { type: Number, default: 0 }, // Indicates if the quiz is active
   },
   {
     timestamps: true,
@@ -51,6 +52,6 @@ QuizSchema.index({ startDate: 1, endDate: 1 });
 
 // Export the models
 module.exports = {
-  Question: mongoose.model("Question", QuestionSchema),
-  Quiz: mongoose.model("Quiz", QuizSchema),
+  Question: mongoose.model('Question', QuestionSchema),
+  Quiz: mongoose.model('Quiz', QuizSchema),
 };
