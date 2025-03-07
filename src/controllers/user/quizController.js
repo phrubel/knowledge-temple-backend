@@ -113,7 +113,8 @@ exports.enrollQuiz = async function (req, res) {
       paymentStatus: Constants.SUCCESS,
     });
 
-    const user = User.findById(userId).lean();
+    // const user = User.findById(userId).lean();
+    const user = await User.findById(userId).lean();
 
     if (payment) {
       throw new APIError(400, 'Quiz Already Enrolled.');
@@ -128,24 +129,27 @@ exports.enrollQuiz = async function (req, res) {
       }
     }
 
-    //course final price
+    // quiz final price
     let finalPrice =
       quiz.price > 0
         ? ofrPer > 0
-          ? quiz.price - (quiz.price * ofrPer) / 100
+          ? quiz.price - quiz.price * ofrPer
           : quiz.price
         : quiz.price;
 
     //wallet balance
     let walletBalance = 0;
 
+    // console.log(finalPrice, 'First final Price');
     if (user.balance > 0 && finalPrice > 0) {
       if (finalPrice <= user.balance) {
-        walletBalance = user.balance - finalPrice;
+        walletBalance = user.balance - finalPrice * 100;
         finalPrice = 0;
       }
     }
 
+    // console.log(finalPrice, walletBalance, 'Final Price');
+    // return;
     if (finalPrice > 0) {
       const receiptId = 'receipt_' + crypto.randomBytes(4).toString('hex');
       const order = await createOrder(
@@ -185,14 +189,14 @@ exports.enrollQuiz = async function (req, res) {
         referCode: referCode || '',
       });
 
-      await User.findByIdAndUpdate(payment.userId, {
+      await User.findByIdAndUpdate(newPayment.userId, {
         balance: walletBalance,
       });
 
       await Transection.create({
         transactionType: 'debit',
         amount: user.balance - walletBalance,
-        paymentId: payment._id,
+        paymentId: newPayment._id,
       });
 
       if (referCode) {
@@ -204,7 +208,7 @@ exports.enrollQuiz = async function (req, res) {
         await Transection.create({
           transactionType: 'credit',
           amount: 10,
-          paymentId: payment._id,
+          paymentId: newPayment._id,
           referredBy: referUser._id.toString(),
           referredTo: newPayment.userId,
         });
