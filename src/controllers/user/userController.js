@@ -581,7 +581,7 @@ exports.convertPoints = async function (req, res) {
 
     await User.findByIdAndUpdate(
       _id,
-      { $inc: { balance: user.points }, points: 0 },
+      { $inc: { balance: user.points * 100 }, points: 0 },
       { new: true }
     );
 

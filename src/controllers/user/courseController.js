@@ -11,6 +11,7 @@ const { createOrder } = require('../../utils/paymentHandler');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const CourseTracking = require('../../models/courseTracking.model');
+const Transection = require('../../models/transactionModel');
 
 exports.getCourses = async function (req, res) {
   try {
@@ -217,7 +218,7 @@ exports.enrollCourse = async function (req, res) {
       }
     }
 
-    const user = User.findById(userId).lean();
+    const user = await User.findById(userId).lean();
 
     const coursePayment = await Payment.findOne({
       courseId,
@@ -238,14 +239,15 @@ exports.enrollCourse = async function (req, res) {
 
     let walletBalance = 0;
 
-    // console.log(finalPrice, 'First final Price');
+    // console.log(finalPrice, user.balance, 'First final Price');
     if (user.balance > 0 && finalPrice > 0) {
       if (finalPrice <= user.balance) {
         walletBalance = user.balance - finalPrice * 100;
         finalPrice = 0;
       }
     }
-
+    // console.log(finalPrice, walletBalance, 'First final Price');
+    // return;
     if (finalPrice > 0) {
       const receiptId = 'receipt_' + crypto.randomBytes(4).toString('hex');
       const order = await createOrder(
