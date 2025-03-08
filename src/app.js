@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const { APIError } = require('./utils/responseHandler');
 const { validateHeaders } = require('./middlewares/authMiddlewares');
 const Constants = require('./constants/appConstants');
-const { initializeFirebaseAdmin } = require('./utils/pushNotificationHandler');
+// const { initializeFirebaseAdmin } = require('./utils/pushNotificationHandler');
 
 const app = express();
 
@@ -79,6 +79,6 @@ mongoose
     console.log(err);
   });
 
-initializeFirebaseAdmin();
+// initializeFirebaseAdmin();
 
 module.exports = app;
