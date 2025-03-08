@@ -300,7 +300,7 @@ exports.startQuiz = async function (req, res) {
         quizId,
         userId,
         paymentStatus: Constants.SUCCESS,
-        paymentId: { $nin: [null, ''] },
+        // paymentId: { $nin: [null, ''] },
       });
 
       if (!payment) {
