@@ -241,7 +241,7 @@ exports.enrollCourse = async function (req, res) {
 
     // console.log(finalPrice, user.balance, 'First final Price');
     if (user.balance > 0 && finalPrice > 0) {
-      if (finalPrice <= user.balance) {
+      if (finalPrice * 100 <= user.balance) {
         walletBalance = user.balance - finalPrice * 100;
         finalPrice = 0;
       }
