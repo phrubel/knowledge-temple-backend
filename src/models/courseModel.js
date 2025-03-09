@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const Course = Schema(
@@ -13,21 +13,30 @@ const Course = Schema(
     thumbnail: { type: String, required: true }, // URL of the course thumbnail
     standard: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'standard',
+      ref: "standard",
     }, // e.g., "10th Grade"
     subject: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'subject',
+      ref: "subject",
     }, // e.g., "Mathematics"
+    boardId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "board",
+      // required: "Board Required",
+    },
+    bookPDF: {
+      type: [String],
+    },
+
     skillLevel: {
       type: String,
       required: true,
-      enum: ['Beginner', 'Intermediate', 'Advanced'],
+      enum: ["Beginner", "Intermediate", "Advanced"],
     }, // e.g., "Beginner"
     lessons: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Lesson',
+        ref: "Lesson",
         default: [],
       },
     ], // Reference to the Lesson model
@@ -39,4 +48,4 @@ const Course = Schema(
   }
 );
 
-module.exports = mongoose.model('Course', Course);
+module.exports = mongoose.model("Course", Course);

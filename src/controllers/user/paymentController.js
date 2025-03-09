@@ -278,9 +278,8 @@ exports.withdrawAmount = async (req, res) => {
 
 // get transaction history
 exports.getTransaction = async (req, res) => {
-  console.log('🚀 API Hit: /transactions', req.query);
   try {
-    const { userId, type } = req.query; // Get userId and optional transaction type from query params
+    const { userId } = req.params; // Get userId and optional transaction type from query params
 
     if (!userId) {
       return res
@@ -288,16 +287,13 @@ exports.getTransaction = async (req, res) => {
         .json({ status: 'error', message: 'User ID is required' });
     }
 
-    const filter = { userId };
-    if (type) {
-      filter.transactionType = type; // Filter by type if provided (e.g., 'D' for deposit, 'withdraw')
-    }
-
-    const transactions = await Transaction.find(filter)
+    const transactions = await Transaction.find({})
       .sort({ createdAt: -1 })
       .lean();
 
-    return res.status(200).json({ status: 'ok', transactions });
+    return res
+      .status(200)
+      .json(new APISuccess(200, 'transactions get successfully', transactions));
   } catch (error) {
     console.error(error);
     res
