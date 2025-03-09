@@ -1,11 +1,11 @@
-const { Quiz, Question } = require("../../models/quizmodel");
-const { APIError, APISuccess } = require("../../utils/responseHandler");
-const { handleError } = require("../../utils/utility");
-const Constants = require("../../constants/appConstants");
-const QuizResult = require("../../models/resultquizmodel");
-const { sendPush } = require("../../utils/pushNotificationHandler");
-const sea = require("node:sea");
-const ResultQuiz = require("../../models/resultquizmodel");
+const { Quiz, Question } = require('../../models/quizmodel');
+const { APIError, APISuccess } = require('../../utils/responseHandler');
+const { handleError } = require('../../utils/utility');
+const Constants = require('../../constants/appConstants');
+const QuizResult = require('../../models/resultquizmodel');
+const { sendPush } = require('../../utils/pushNotificationHandler');
+const sea = require('node:sea');
+const ResultQuiz = require('../../models/resultquizmodel');
 
 // Create new quiz
 const createQuiz = async (req, res) => {
@@ -21,6 +21,7 @@ const createQuiz = async (req, res) => {
       price,
       duration,
       ageGroup,
+      bonusPercent,
     } = req.body;
 
     // Validate required fields
@@ -34,7 +35,7 @@ const createQuiz = async (req, res) => {
       !startDate ||
       !endDate
     ) {
-      throw new APIError(400, "All fields are required");
+      throw new APIError(400, 'All fields are required');
     }
 
     const quiz = await Quiz.create({
@@ -47,17 +48,18 @@ const createQuiz = async (req, res) => {
       price,
       duration,
       ageGroup,
+      bonusPercent,
     });
 
     const nowDate = new Date().toISOString();
     if (startDate > endDate) {
-      throw new APIError(400, "Start date must be before end date");
+      throw new APIError(400, 'Start date must be before end date');
     } else if (startDate < nowDate || endDate < nowDate) {
-      throw new APIError(400, "Please Select a valid start and end date");
+      throw new APIError(400, 'Please Select a valid start and end date');
     }
 
     const quesIds = (await Question.insertMany(questions)).map(
-      (question) => question._id,
+      (question) => question._id
     );
 
     const quizQue = await Quiz.findByIdAndUpdate(
@@ -68,17 +70,17 @@ const createQuiz = async (req, res) => {
       {
         new: true,
         projection: { questions: 0 },
-      },
+      }
     );
 
     sendPush(
-      "New Quiz Created.",
-      `A new quiz titled "${title}" has been created. Check it out!`,
+      'New Quiz Created.',
+      `A new quiz titled "${title}" has been created. Check it out!`
     );
 
     return res
       .status(200)
-      .json(new APISuccess(200, "Quiz created successfully", quizQue));
+      .json(new APISuccess(200, 'Quiz created successfully', quizQue));
   } catch (error) {
     return handleError(res, error);
   }
@@ -93,7 +95,7 @@ const getAllQuizzes = async (req, res) => {
 
     const query = {};
     if (search) {
-      query.title = { $regex: search, $options: "i" };
+      query.title = { $regex: search, $options: 'i' };
     }
 
     const quizzes = await Quiz.find(query)
@@ -105,11 +107,11 @@ const getAllQuizzes = async (req, res) => {
     const totalPages = Math.ceil(totalReco / limit);
 
     return res.status(200).json(
-      new APISuccess(200, "Get all quizzes successfully", {
+      new APISuccess(200, 'Get all quizzes successfully', {
         docs: quizzes,
         currentPage: pageNumber,
         totalPages: totalPages,
-      }),
+      })
     );
   } catch (error) {
     return handleError(res, error);
@@ -119,15 +121,15 @@ const getAllQuizzes = async (req, res) => {
 // Get quiz by ID
 const getQuizById = async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id).populate("questions");
+    const quiz = await Quiz.findById(req.params.id).populate('questions');
 
     if (!quiz) {
-      throw new APIError(404, "Quiz not found");
+      throw new APIError(404, 'Quiz not found');
     }
 
     return res
       .status(200)
-      .json(new APISuccess(200, "Get quiz by ID successfully", quiz));
+      .json(new APISuccess(200, 'Get quiz by ID successfully', quiz));
   } catch (error) {
     return handleError(res, error);
   }
@@ -147,6 +149,7 @@ const updateQuiz = async (req, res) => {
       price,
       duration,
       ageGroup,
+      bonusPercent,
     } = req.body;
 
     // Validate required fields
@@ -160,24 +163,24 @@ const updateQuiz = async (req, res) => {
       !startDate ||
       !endDate
     ) {
-      throw new APIError(400, "All fields are required");
+      throw new APIError(400, 'All fields are required');
     }
 
     const nowDate = new Date().toISOString();
     if (startDate > endDate) {
-      throw new APIError(400, "Start date must be before end date");
+      throw new APIError(400, 'Start date must be before end date');
     } else if (startDate < nowDate || endDate < nowDate) {
-      throw new APIError(400, "Please Select a valid start and end date");
+      throw new APIError(400, 'Please Select a valid start and end date');
     }
 
     const temp = await Quiz.findById(req.params.id);
 
     if (!temp) {
-      throw new APIError(400, "Quiz Not Found.");
+      throw new APIError(400, 'Quiz Not Found.');
     }
     // check quiz if not started
     if (temp.startDate <= nowDate) {
-      throw new APIError(400, "Cannot update quiz that has already started");
+      throw new APIError(400, 'Cannot update quiz that has already started');
     }
 
     const quiz = await Quiz.findByIdAndUpdate(
@@ -192,12 +195,13 @@ const updateQuiz = async (req, res) => {
         price,
         duration,
         ageGroup,
+        bonusPercent,
       },
-      { new: true },
+      { new: true }
     );
 
     if (!quiz) {
-      throw new APIError(404, "Quiz not found");
+      throw new APIError(404, 'Quiz not found');
     }
 
     if (questions.length > 0) {
@@ -206,7 +210,7 @@ const updateQuiz = async (req, res) => {
       }
 
       const quesIds = (await Question.insertMany(questions)).map(
-        (question) => question._id,
+        (question) => question._id
       );
 
       quiz.questions = quesIds;
@@ -215,7 +219,7 @@ const updateQuiz = async (req, res) => {
 
     return res
       .status(200)
-      .json(new APISuccess(200, "Quiz updated successfully", quiz));
+      .json(new APISuccess(200, 'Quiz updated successfully', quiz));
   } catch (error) {
     return handleError(res, error);
   }
@@ -228,17 +232,17 @@ const toggleActiveQuiz = async (req, res) => {
 
     const quiz = await Quiz.findByIdAndUpdate(
       quizId,
-      [{ $set: { isActive: { $not: "$isActive" } } }],
-      { returnDocument: "after" },
+      [{ $set: { isActive: { $not: '$isActive' } } }],
+      { returnDocument: 'after' }
     );
 
     if (!quiz) {
-      throw new APIError(404, "Quiz not found");
+      throw new APIError(404, 'Quiz not found');
     }
 
     return res
       .status(200)
-      .json(new APISuccess(200, "Quiz status successfully", quiz));
+      .json(new APISuccess(200, 'Quiz status successfully', quiz));
   } catch (error) {
     return handleError(res, error);
   }
@@ -252,8 +256,8 @@ const quizResults = async (req, res) => {
 
     const quizResults = await QuizResult.find({ quizId })
       .sort({ score: -1, submittedTime: 1 })
-      .select("-answers -quizId")
-      .populate("userId", "name mobile")
+      .select('-answers -quizId')
+      .populate('userId', 'name mobile')
       .skip(skip)
       .limit(Constants.PAGE_SIZE)
       .lean();
@@ -272,11 +276,11 @@ const quizResults = async (req, res) => {
     quizResults.sort((a, b) => a.timeTaken - b.timeTaken);
 
     return res.status(200).json(
-      new APISuccess(200, "Top User of Quiz Result.", {
+      new APISuccess(200, 'Top User of Quiz Result.', {
         docs: quizResults,
         currentPage: pageNo,
         totalPages: Math.ceil(totalDocuments / Constants.PAGE_SIZE),
-      }),
+      })
     );
   } catch (error) {
     return handleError(res, error);
@@ -297,15 +301,15 @@ const getEligibleOfrQuizzes = async (req, res) => {
     };
 
     if (search) {
-      query.title = { $regex: search, $options: "i" };
+      query.title = { $regex: search, $options: 'i' };
     }
 
-    const quizzes = await Quiz.find(query).select("title").limit(limit);
+    const quizzes = await Quiz.find(query).select('title').limit(limit);
 
     return res.status(200).json(
-      new APISuccess(200, "Get all quizzes successfully", {
+      new APISuccess(200, 'Get all quizzes successfully', {
         quizzes,
-      }),
+      })
     );
   } catch (error) {
     return handleError(res, error);
@@ -319,14 +323,14 @@ const getUserQuizResults = async (req, res) => {
     const skip = (pageNo - 1) * Constants.PAGE_SIZE;
 
     let results = await ResultQuiz.find({ userId }) // Find quiz results by quizId
-      .select("-answers")
+      .select('-answers')
       .populate({
-        path: "quizId", // Populate quiz details
-        select: "title", // Fetch only the title of the quiz
+        path: 'quizId', // Populate quiz details
+        select: 'title', // Fetch only the title of the quiz
         populate: {
-          path: "questions",
-          select: "_id",
-        }
+          path: 'questions',
+          select: '_id',
+        },
       })
       // .populate({
       //   path: "answers.questionId", // Populate question details for each answer
@@ -338,7 +342,7 @@ const getUserQuizResults = async (req, res) => {
       .limit(Constants.PAGE_SIZE)
       .lean();
 
-    results = results.map(result => {
+    results = results.map((result) => {
       const { quizId, ...rest } = result;
       return {
         ...rest,
@@ -353,11 +357,11 @@ const getUserQuizResults = async (req, res) => {
     const totalDocs = await ResultQuiz.countDocuments({ userId });
 
     return res.status(200).json(
-      new APISuccess(200, "Quiz Results", {
+      new APISuccess(200, 'Quiz Results', {
         docs: results,
         currentPage: pageNo,
         totalPages: Math.ceil(totalDocs / Constants.PAGE_SIZE),
-      }),
+      })
     );
   } catch (error) {
     return handleError(res, error);
