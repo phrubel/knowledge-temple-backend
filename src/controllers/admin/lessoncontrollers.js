@@ -8,7 +8,7 @@ const Constants = require("../../constants/appConstants");
 const createLesson = async (req, res) => {
   try {
     const { courseId, lessons, subject, standard, boardId } = req.body;
-
+    console.log(req.body);
     if (!courseId) {
       throw new APIError(400, "Course ID is required");
     }
@@ -51,6 +51,52 @@ const createLesson = async (req, res) => {
     return handleError(res, error);
   }
 };
+// const createLesson = async (req, res) => {
+//   try {
+//     const { courseId, lessons, subject, standard, boardId,  } = req.body;
+//     console.log(req.body);
+//     if (!courseId) {
+//       throw new APIError(400, "Course ID is required");
+//     }
+
+//     if (!lessons || lessons.length === 0) {
+//       throw new APIError(400, "Lessons are required");
+//     }
+
+//     // Validate required fields in each lesson
+//     lessons.forEach((lesson) => {
+//       if (!lesson.title || !lesson.description) {
+//         throw new APIError(400, "Lesson title and description are required");
+//       }
+//       lesson.courseId = courseId; // Assign courseId to each lesson dynamically
+
+//       // Add optional fields only if provided
+//       if (subject) lesson.subject = subject;
+//       if (standard) lesson.standard = standard;
+//       if (boardId) lesson.boardId = boardId;
+//     });
+
+//     const course = await Course.findById(courseId);
+
+//     if (!course) {
+//       throw new APIError(404, "Course not found");
+//     }
+
+//     // Insert lessons
+//     const createdLessons = await Lesson.insertMany(lessons);
+
+//     // Add new lesson IDs to the course
+//     createdLessons.forEach((lesson) => course.lessons.push(lesson._id));
+
+//     await course.save();
+
+//     return res
+//       .status(200)
+//       .json(new APISuccess(200, "Lesson created successfully", createdLessons));
+//   } catch (error) {
+//     return handleError(res, error);
+//   }
+// };
 
 // Get all lessons
 const getAllLessons = async (req, res) => {

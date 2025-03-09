@@ -19,7 +19,7 @@ const createCourse = async (req, res) => {
       boardId,
       bookPDF, // Optional
     } = req.body;
-
+    console.log(req.body);
     // Validate required fields
     if (
       !title ||
@@ -47,6 +47,7 @@ const createCourse = async (req, res) => {
       price,
       subject,
       standard,
+      boardId,
     };
 
     if (bookPDF) {
