@@ -7,6 +7,8 @@ const { authorization } = require('../../middlewares/authMiddlewares');
 
 router.post('/getCheckoutDetails', paymentController.checkout);
 
+//routes for done
+
 router.post('/verifyPayment', paymentController.verifyPayout);
 
 //deposit routes
