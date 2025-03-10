@@ -1,7 +1,7 @@
-const Course = require("../../models/courseModel");
-const { APIError, APISuccess } = require("../../utils/responseHandler");
-const { handleError } = require("../../utils/utility");
-const Constants = require("../../constants/appConstants");
+const Course = require('../../models/courseModel');
+const { APIError, APISuccess } = require('../../utils/responseHandler');
+const { handleError } = require('../../utils/utility');
+const Constants = require('../../constants/appConstants');
 
 // Create new course
 const createCourse = async (req, res) => {
@@ -16,8 +16,11 @@ const createCourse = async (req, res) => {
       price,
       subject,
       standard,
+      boardId,
+      bookPDF, // Optional
+      bonusPercent,
     } = req.body;
-
+    console.log(req.body);
     // Validate required fields
     if (
       !title ||
@@ -28,12 +31,14 @@ const createCourse = async (req, res) => {
       !skillLevel ||
       !duration ||
       !features ||
+      !boardId ||
       features.length === 0
     ) {
-      throw new APIError(400, "All fields are required");
+      throw new APIError(400, 'All fields are required');
     }
 
-    const course = await Course.create({
+    // Create course with optional bookPDF
+    const courseData = {
       title,
       description,
       features,
@@ -43,16 +48,25 @@ const createCourse = async (req, res) => {
       price,
       subject,
       standard,
-    });
+      boardId,
+      bonusPercent,
+    };
+
+    if (bookPDF) {
+      courseData.bookPDF = bookPDF; // Add bookPDF only if provided
+    }
+
+    const course = await Course.create(courseData);
 
     const newCourse = await Course.findById(course._id)
-      .populate("subject", "-__v -createdAt -updatedAt")
-      .populate("standard", "-__v -createdAt -updatedAt")
+      .populate('subject', '-__v -createdAt -updatedAt')
+      .populate('standard', '-__v -createdAt -updatedAt')
+      .populate('boardId', 'boardname boardshortname')
       .lean();
 
     return res
       .status(200)
-      .json(new APISuccess(200, "Course created successfully", newCourse));
+      .json(new APISuccess(200, 'Course created successfully', newCourse));
   } catch (error) {
     return handleError(res, error);
   }
@@ -67,14 +81,15 @@ const getAllCourses = async (req, res) => {
 
     const query = {};
     if (search) {
-      query.title = { $regex: search, $options: "i" };
+      query.title = { $regex: search, $options: 'i' };
     }
 
     const course = await Course.find(query)
       .sort({ createdAt: -1 })
-      .select("-__v -createdAt -updatedAt")
-      .populate("subject", "-__v -createdAt -updatedAt")
-      .populate("standard", "-__v -createdAt -updatedAt")
+      .select('-__v -createdAt -updatedAt')
+      .populate('subject', '-__v -createdAt -updatedAt')
+      .populate('standard', '-__v -createdAt -updatedAt')
+      .populate('boardId', 'boardname boardshortname')
       .skip((pageNumber - 1) * limit)
       .limit(limit);
 
@@ -82,7 +97,7 @@ const getAllCourses = async (req, res) => {
     const totalPages = Math.ceil(totalReco / limit);
 
     return res.status(200).json(
-      new APISuccess(200, "Course get all successfully", {
+      new APISuccess(200, 'Course get all successfully', {
         docs: course,
         currentPage: pageNumber,
         totalPages: totalPages,
@@ -97,17 +112,18 @@ const getAllCourses = async (req, res) => {
 const getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
-      .select("-__v -createdAt -updatedAt")
-      .populate("subject", "-__v -createdAt -updatedAt")
-      .populate("standard", "-__v -createdAt -updatedAt");
+      .select('-__v -createdAt -updatedAt')
+      .populate('subject', '-__v -createdAt -updatedAt')
+      .populate('standard', '-__v -createdAt -updatedAt')
+      .populate('boardId', 'boardname boardshortname');
 
     if (!course) {
-      throw new APIError(404, "Course not found");
+      throw new APIError(404, 'Course not found');
     }
 
     return res
       .status(200)
-      .json(new APISuccess(200, "Course get by Id successfully", course));
+      .json(new APISuccess(200, 'Course get by Id successfully', course));
   } catch (error) {
     return handleError(res, error);
   }
@@ -126,9 +142,12 @@ const updateCourse = async (req, res) => {
       price,
       subject,
       standard,
+      bookPDF, // Optional field
+      boardId, // Ensure boardId can also be updated if necessary
+      bonusPercent,
     } = req.body;
 
-    // Validate required fields
+    // Validate required fields (if a field is undefined, it's not required)
     if (
       !title ||
       !description ||
@@ -140,39 +159,47 @@ const updateCourse = async (req, res) => {
       !features ||
       features.length === 0
     ) {
-      throw new APIError(400, "All fields are required");
+      throw new APIError(400, 'All fields are required');
     }
 
-    const course = await Course.findByIdAndUpdate(
-      req.params.id,
-      {
-        title,
-        description,
-        features,
-        duration,
-        skillLevel,
-        thumbnail,
-        price,
-        subject,
-        standard,
+    // Prepare the update object dynamically
+    const updateData = {
+      title,
+      description,
+      features,
+      duration,
+      skillLevel,
+      thumbnail,
+      price,
+      subject,
+      standard,
+      bonusPercent,
+    };
+
+    if (bookPDF) {
+      updateData.bookPDF = bookPDF;
+    }
+
+    if (boardId) {
+      updateData.boardId = boardId;
+    }
+
+    const course = await Course.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      projection: {
+        __v: 0,
+        createdAt: 0,
+        updatedAt: 0,
       },
-      {
-        new: true,
-        projection: {
-          __v: 0,
-          createdAt: 0,
-          updatedAt: 0,
-        },
-      }
-    ).lean();
+    }).lean();
 
     if (!course) {
-      throw new APIError(404, "Course not found");
+      throw new APIError(404, 'Course not found');
     }
 
     return res
       .status(200)
-      .json(new APISuccess(200, "Course updated successfully", course));
+      .json(new APISuccess(200, 'Course updated successfully', course));
   } catch (error) {
     return handleError(res, error);
   }
@@ -185,16 +212,16 @@ const toggleCourseActive = async (req, res) => {
 
     const course = await Course.findByIdAndUpdate(
       courseId,
-      [{ $set: { isActive: { $not: "$isActive" } } }],
-      { returnDocument: "after" }
+      [{ $set: { isActive: { $not: '$isActive' } } }],
+      { returnDocument: 'after' }
     );
 
     if (!course) {
-      throw new APIError(404, "Course not found");
+      throw new APIError(404, 'Course not found');
     }
     return res
       .status(200)
-      .json(new APISuccess(200, "Course status updated successfully", course));
+      .json(new APISuccess(200, 'Course status updated successfully', course));
   } catch (error) {
     return handleError(res, error);
   }
@@ -212,13 +239,13 @@ const getEligibleOfrCourses = async (req, res) => {
     };
 
     if (search) {
-      query.title = { $regex: search, $options: "i" };
+      query.title = { $regex: search, $options: 'i' };
     }
 
-    const courses = await Course.find(query).select("title").limit(limit);
+    const courses = await Course.find(query).select('title').limit(limit);
 
     return res.status(200).json(
-      new APISuccess(200, "Get all courses successfully", {
+      new APISuccess(200, 'Get all courses successfully', {
         courses,
       })
     );
