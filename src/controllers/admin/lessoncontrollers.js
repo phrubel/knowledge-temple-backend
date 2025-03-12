@@ -7,50 +7,60 @@ const Constants = require("../../constants/appConstants");
 // Create new lesson
 const createLesson = async (req, res) => {
   try {
-    const { courseId, lessons, subject, standard, boardId } = req.body;
+    const { lessons } = req.body;
     console.log(req.body);
-    if (!courseId) {
-      throw new APIError(400, "Course ID is required");
-    }
 
-    if (!lessons || lessons.length === 0) {
-      throw new APIError(400, "Lessons are required");
+    if (!lessons || !Array.isArray(lessons) || lessons.length === 0) {
+      throw new APIError(400, "Lessons are required and should be an array");
     }
 
     // Validate required fields in each lesson
-    lessons.forEach((lesson) => {
-      if (!lesson.title || !lesson.description) {
-        throw new APIError(400, "Lesson title and description are required");
+    const courseIds = new Set(); // Unique course IDs track করার জন্য
+
+    for (const lesson of lessons) {
+      if (!lesson.title || !lesson.description || !lesson.courseId) {
+        throw new APIError(
+          400,
+          "Lesson title, description, and courseId are required for each lesson"
+        );
       }
-      lesson.courseId = courseId; // Assign courseId to each lesson dynamically
-
-      // Add optional fields only if provided
-      if (subject) lesson.subject = subject;
-      if (standard) lesson.standard = standard;
-      if (boardId) lesson.boardId = boardId;
-    });
-
-    const course = await Course.findById(courseId);
-
-    if (!course) {
-      throw new APIError(404, "Course not found");
+      courseIds.add(lesson.courseId);
     }
 
-    // Insert lessons
+    // Check if all course IDs exist in the database
+    const courses = await Course.find({ _id: { $in: Array.from(courseIds) } });
+
+    if (courses.length !== courseIds.size) {
+      throw new APIError(404, "One or more Course IDs are invalid");
+    }
+
+    // Insert lessons into the database
     const createdLessons = await Lesson.insertMany(lessons);
 
-    // Add new lesson IDs to the course
-    createdLessons.forEach((lesson) => course.lessons.push(lesson._id));
+    // Map lessons to their respective courses
+    const courseMap = new Map();
+    courses.forEach((course) => courseMap.set(course._id.toString(), course));
 
-    await course.save();
+    createdLessons.forEach((lesson) => {
+      const course = courseMap.get(lesson.courseId.toString());
+      if (course) {
+        course.lessons.push(lesson._id);
+      }
+    });
+
+    // Save all courses
+    await Promise.all(courses.map((course) => course.save()));
 
     return res
       .status(200)
-      .json(new APISuccess(200, "Lesson created successfully", createdLessons));
+      .json(
+        new APISuccess(200, "Lessons created successfully", createdLessons)
+      );
   } catch (error) {
     return handleError(res, error);
   }
 };
+
 // const createLesson = async (req, res) => {
 //   try {
 //     const { courseId, lessons, subject, standard, boardId,  } = req.body;
