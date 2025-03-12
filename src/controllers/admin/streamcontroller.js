@@ -84,6 +84,16 @@ exports.fetchStream = async (req, res) => {
   }
 };
 
+exports.fetchUpcomingLive = async (req, res) => {
+  try {
+    const live = await Stream.findOne({ upcomming: true });
+    if (!live) return res.status(404).json({ message: 'No live session' });
+    res.status(200).json({ message: 'Live session ', data: live });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 exports.getViewers = async (req, res) => {
   const channelArn = 'arn:aws:ivs:ap-south-1:116981808722:channel/bFpcIjcN1i86'; // Replace with your IVS Channel ARN
 
