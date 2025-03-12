@@ -5,6 +5,8 @@ const StreamSchema = mongoose.Schema({
   playbackUrl: String,
   streamKey: String,
   isLive: { type: Boolean, default: false },
+  upcomming: { type: Boolean, default: true },
+  startDate: { type: Date },
 });
 
 const Stream = mongoose.model('Stream', StreamSchema);
