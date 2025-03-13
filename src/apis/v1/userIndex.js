@@ -12,6 +12,7 @@ const subjectRoutes = require('../../routes/user/subjectRoute');
 const offerRoutes = require('../../routes/user/offerRoutes');
 const mentorRoutes = require('../../routes/user/mentorRoutes');
 const trackingRoutes = require('../../routes/user/courseTrackingRoutes');
+const streamRoutes = require('../../routes/user/streamRoutes');
 
 router.use(userRoutes);
 
@@ -20,6 +21,8 @@ router.use('/course', courseRoutes);
 router.use('/material', materialRoutes);
 
 router.use('/quiz', quizRoutes);
+
+router.use('/stream', streamRoutes);
 
 router.use(activityRoutes);
 

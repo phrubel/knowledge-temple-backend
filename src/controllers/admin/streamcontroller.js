@@ -1,5 +1,7 @@
 const Stream = require('../../models/streamModel');
 const AWS = require('aws-sdk');
+const { APISuccess, APIError } = require('../../utils/responseHandler');
+const { handleError } = require('../../utils/utility');
 
 // AWS Configuration
 AWS.config.update({
@@ -21,10 +23,29 @@ exports.createUpcomingLive = async (req, res) => {
       upcomming: true,
       startDate,
     });
+
+    if (!title || !playbackUrl || !streamKey || !startDate) {
+      throw new APIError(400, 'All fields are required');
+    }
+
     const data = await newStream.save();
-    res
+
+    return res
       .status(200)
-      .json({ message: 'upcomming live created successfully', data });
+      .json(new APISuccess(200, 'Live created successfully', data));
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+exports.getAllUpcomingStream = async (req, res) => {
+  try {
+    const result = await Stream.find({
+      upcomming: true,
+    }).sort('startDate -1');
+    return res
+      .status(200)
+      .json(new APISuccess(200, 'Upcoming live fetched successfully', result));
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
   }
@@ -59,7 +80,9 @@ exports.startStream = async (req, res) => {
       }
     );
 
-    res.status(200).json({ message: 'Live session started!', data: live });
+    return res
+      .status(200)
+      .json(new APISuccess(200, 'Live session started!', live));
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
   }
@@ -68,7 +91,9 @@ exports.startStream = async (req, res) => {
 exports.stopStream = async (req, res) => {
   try {
     await Stream.updateMany({}, { isLive: false });
-    res.status(200).json({ message: 'Live session ended!' });
+    return res
+      .status(200)
+      .json(new APISuccess(200, 'Live session started!', live));
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
   }
