@@ -90,6 +90,7 @@ exports.startStream = async (req, res) => {
   }
 };
 
+//stop stream route
 exports.stopStream = async (req, res) => {
   try {
     await Stream.updateMany({}, { isLive: false });
