@@ -14,19 +14,21 @@ const cloudwatch = new AWS.CloudWatch({ region: 'ap-south-1' });
 
 exports.createUpcomingLive = async (req, res) => {
   try {
-    const { title, playbackUrl, streamKey, startDate } = req.body;
+    const { title, startDate } = req.body;
+
+    if (!title || !startDate) {
+      throw new APIError(400, 'All fields are required');
+    }
+
     const newStream = new Stream({
       title,
-      playbackUrl,
-      streamKey,
+      playbackUrl:
+        'https://6b879004354a.ap-south-1.playback.live-video.net/api/video/v1/ap-south-1.116981808722.channel.bFpcIjcN1i86.m3u8',
+      streamKey: 'sk_ap-south-1_4LeRY8OAJOep_ZX2Eci4lRcTxA8SND1PngxjmaeNKSY',
       isLive: false,
       upcomming: true,
       startDate,
     });
-
-    if (!title || !playbackUrl || !streamKey || !startDate) {
-      throw new APIError(400, 'All fields are required');
-    }
 
     const data = await newStream.save();
 
@@ -91,10 +93,9 @@ exports.startStream = async (req, res) => {
 exports.stopStream = async (req, res) => {
   try {
     await Stream.updateMany({}, { isLive: false });
-    return res
-      .status(200)
-      .json(new APISuccess(200, 'Live session started!', live));
+    return res.status(200).json(new APISuccess(200, 'Live session ended!'));
   } catch (error) {
+    console.log('==========================', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
