@@ -414,10 +414,7 @@ exports.updateProfile = async function (req, res) {
 
     const user = await USER.findById(userId);
 
-    if (
-      (req.user.userRole !== 'user' && updateData.email) ||
-      updateData.userRole
-    ) {
+    if (req.user.userRole !== 'user' && updateData.email) {
       throw new APIError(400, 'User not allowed to update profile.');
     }
 
