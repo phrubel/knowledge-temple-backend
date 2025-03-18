@@ -8,6 +8,6 @@ const {
 const router = require('express').Router();
 
 router.get('/', fetchStream);
-router.get('/upcoming-live', getAllUpcomingStream);
+router.post('/upcoming-live', getAllUpcomingStream);
 
 module.exports = router;

@@ -1,7 +1,7 @@
-const { APISuccess } = require("../../utils/responseHandler");
-const { handleError } = require("../../utils/utility");
-const Constants = require("../../constants/appConstants");
-const Mentor = require("../../models/Mentor.model");
+const { APISuccess } = require('../../utils/responseHandler');
+const { handleError } = require('../../utils/utility');
+const Constants = require('../../constants/appConstants');
+const Mentor = require('../../models/Mentor.model');
 
 // Mentor Listing
 exports.listMentors = async (req, res) => {
@@ -12,7 +12,7 @@ exports.listMentors = async (req, res) => {
 
     const mentors = await Mentor.find({ isActive: true })
       .sort({ createdAt: -1 })
-      .select("-__v -createdAt -updatedAt")
+      .select('-__v -createdAt -updatedAt')
       .skip((pageNumber - 1) * limit)
       .limit(limit);
 
@@ -20,10 +20,26 @@ exports.listMentors = async (req, res) => {
     const totalPages = Math.ceil(totalReco / limit);
 
     return res.status(200).json(
-      new APISuccess(200, "Mentors retrieved successfully", {
+      new APISuccess(200, 'Mentors retrieved successfully', {
         docs: mentors,
         currentPage: pageNumber,
         totalPages: totalPages,
+      })
+    );
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+exports.mentorsDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const mentors = await Mentor.findById(id);
+
+    return res.status(200).json(
+      new APISuccess(200, 'Mentors Details successfully', {
+        docs: mentors,
       })
     );
   } catch (error) {

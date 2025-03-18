@@ -14,9 +14,9 @@ const cloudwatch = new AWS.CloudWatch({ region: 'ap-south-1' });
 
 exports.createUpcomingLive = async (req, res) => {
   try {
-    const { title, startDate } = req.body;
+    const { title, startDate, standard, boardId } = req.body;
 
-    if (!title || !startDate) {
+    if (!title || !startDate || !standard || !boardId) {
       throw new APIError(400, 'All fields are required');
     }
 
@@ -28,6 +28,8 @@ exports.createUpcomingLive = async (req, res) => {
       isLive: false,
       upcomming: true,
       startDate,
+      standard,
+      boardId,
     });
 
     const data = await newStream.save();
@@ -41,10 +43,19 @@ exports.createUpcomingLive = async (req, res) => {
 };
 
 exports.getAllUpcomingStream = async (req, res) => {
+  const query = { upcomming: true };
+  const data = req.body;
   try {
-    const result = await Stream.find({
-      upcomming: true,
-    }).sort('startDate -1');
+    if (data.standard) {
+      query.standard = data.standard;
+    }
+    if (data.boardId) {
+      query.boardId = data.boardId;
+    }
+    const result = await Stream.find(query)
+      .populate('standard')
+      .populate('boardId')
+      .sort('startDate -1');
     return res
       .status(200)
       .json(new APISuccess(200, 'Upcoming live fetched successfully', result));
@@ -106,6 +117,16 @@ exports.fetchStream = async (req, res) => {
     const stream = await Stream.findOne({ isLive: true });
     if (!stream) return res.status(404).json({ message: 'No live session' });
     res.status(200).json({ message: 'Live session ', data: stream });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.fetchUpcomingLive = async (req, res) => {
+  try {
+    const live = await Stream.findOne({ upcomming: true });
+    if (!live) return res.status(404).json({ message: 'No live session' });
+    res.status(200).json({ message: 'Live session ', data: live });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
   }
