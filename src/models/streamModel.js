@@ -13,11 +13,17 @@ const StreamSchema = new mongoose.Schema({
   standard: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'standard',
+    required: 'Board Required',
   }, // e.g., "10th Grade"
   boardId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'board',
-    // required: "Board Required",
+    required: 'Board Required',
+  },
+  courseId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course',
+    required: true,
   },
 });
 

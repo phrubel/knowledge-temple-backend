@@ -2,30 +2,75 @@ const { ivs, cloudwatch, ivsChat } = require('../../config/awsConfig');
 const Stream = require('../../models/streamModel');
 const { APISuccess } = require('../../utils/responseHandler');
 
+// exports.createUpcomingLive = async (req, res) => {
+//   try {
+//     const { title, startDate, standard, boardId } = req.body;
+
+//     if (!title || !startDate || !standard || !boardId) {
+//       throw new APIError(400, 'All fields are required');
+//     }
+//     // Create a new IVS channel
+//     const channelParams = {
+//       latencyMode: 'REALTIME', // ✅ Real-Time Streaming
+//       type: 'BASIC',
+//       name: title,
+//     };
+
+//     const { channel, streamKey } = await ivs
+//       .createChannel(channelParams)
+//       .promise();
+
+//     // Create an IVS Chat Room
+//     const chatParams = {
+//       name: `chat-${title}`,
+//     };
+//     const chatRoom = await ivsChat.createRoom(chatParams).promise();
+
+//     // Save stream and chat room details in MongoDB
+//     const newStream = new Stream({
+//       title,
+//       playbackUrl: channel.playbackUrl,
+//       ingestUrl: channel.ingestEndpoint,
+//       streamId: streamKey.value,
+//       chatRoomId: chatRoom.arn, // Save chat room ID
+//       channelArn: channel.arn, // Save channel ARN
+//       startDate,
+//       standard,
+//       boardId,
+//     });
+
+//     await newStream.save();
+//     res.status(201).json(newStream);
+//   } catch (error) {
+//     console.error('Error creating stream:', error);
+//     res.status(500).json({ message: 'Failed to create stream', error });
+//   }
+// };
+
 exports.createUpcomingLive = async (req, res) => {
   try {
-    const { title, startDate, standard, boardId } = req.body;
-
-    if (!title || !startDate || !standard || !boardId) {
+    const { title, startDate, standard, boardId, courseId } = req.body;
+    if (!title || !startDate || !standard || !boardId || !courseId) {
       throw new APIError(400, 'All fields are required');
     }
+
+    // Sanitize the title for the channel name
+    const sanitizedTitle = title.replace(/[^a-zA-Z0-9-_]/g, '_');
+
     // Create a new IVS channel
     const channelParams = {
-      latencyMode: 'REALTIME', // ✅ Real-Time Streaming
-      type: 'BASIC',
-      name: title,
+      latencyMode: 'LOW', // ✅ Real-Time Streaming
+      type: 'STANDARD',
+      name: sanitizedTitle,
     };
-
     const { channel, streamKey } = await ivs
       .createChannel(channelParams)
       .promise();
-
     // Create an IVS Chat Room
     const chatParams = {
-      name: `chat-${title}`,
+      name: `chat-${sanitizedTitle}`,
     };
     const chatRoom = await ivsChat.createRoom(chatParams).promise();
-
     // Save stream and chat room details in MongoDB
     const newStream = new Stream({
       title,
@@ -35,10 +80,10 @@ exports.createUpcomingLive = async (req, res) => {
       chatRoomId: chatRoom.arn, // Save chat room ID
       channelArn: channel.arn, // Save channel ARN
       startDate,
+      courseId,
       standard,
       boardId,
     });
-
     await newStream.save();
     res.status(201).json(newStream);
   } catch (error) {
@@ -58,6 +103,7 @@ exports.getAllUpcomingStream = async (req, res) => {
     })
       .populate('standard')
       .populate('boardId')
+      .populate('courseId')
       .sort('startDate -1');
     return res
       .status(200)

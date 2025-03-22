@@ -13,10 +13,17 @@ const Constants = require('./constants/appConstants');
 
 const app = express();
 
-// Allow Cross-Origin requests
 app.use(
   cors({
-    origin: 'http://localhost:8080',
+    origin: [
+      'http://localhost:8080',
+      'https://admin.knowledgetemple.in',
+      'https://www.admin.knowledgetemple.in',
+      'www.admin.knowledgetemple.in',
+      'admin.knowledgetemple.in',
+    ], // Set specific origin
+    credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
 
