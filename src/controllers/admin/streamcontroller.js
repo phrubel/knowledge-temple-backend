@@ -1,44 +1,94 @@
+const { ivs, cloudwatch, ivsChat } = require('../../config/awsConfig');
 const Stream = require('../../models/streamModel');
-const AWS = require('aws-sdk');
-const { APISuccess, APIError } = require('../../utils/responseHandler');
-const { handleError } = require('../../utils/utility');
+const { APISuccess } = require('../../utils/responseHandler');
 
-// AWS Configuration
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: 'ap-south-1', // Change to your IVS region
-});
+// exports.createUpcomingLive = async (req, res) => {
+//   try {
+//     const { title, startDate, standard, boardId } = req.body;
 
-const cloudwatch = new AWS.CloudWatch({ region: 'ap-south-1' });
+//     if (!title || !startDate || !standard || !boardId) {
+//       throw new APIError(400, 'All fields are required');
+//     }
+//     // Create a new IVS channel
+//     const channelParams = {
+//       latencyMode: 'REALTIME', // ✅ Real-Time Streaming
+//       type: 'BASIC',
+//       name: title,
+//     };
+
+//     const { channel, streamKey } = await ivs
+//       .createChannel(channelParams)
+//       .promise();
+
+//     // Create an IVS Chat Room
+//     const chatParams = {
+//       name: `chat-${title}`,
+//     };
+//     const chatRoom = await ivsChat.createRoom(chatParams).promise();
+
+//     // Save stream and chat room details in MongoDB
+//     const newStream = new Stream({
+//       title,
+//       playbackUrl: channel.playbackUrl,
+//       ingestUrl: channel.ingestEndpoint,
+//       streamId: streamKey.value,
+//       chatRoomId: chatRoom.arn, // Save chat room ID
+//       channelArn: channel.arn, // Save channel ARN
+//       startDate,
+//       standard,
+//       boardId,
+//     });
+
+//     await newStream.save();
+//     res.status(201).json(newStream);
+//   } catch (error) {
+//     console.error('Error creating stream:', error);
+//     res.status(500).json({ message: 'Failed to create stream', error });
+//   }
+// };
 
 exports.createUpcomingLive = async (req, res) => {
   try {
-    const { title, startDate, standard, boardId } = req.body;
-
-    if (!title || !startDate || !standard || !boardId) {
+    const { title, startDate, standard, boardId, courseId } = req.body;
+    if (!title || !startDate || !standard || !boardId || !courseId) {
       throw new APIError(400, 'All fields are required');
     }
 
+    // Sanitize the title for the channel name
+    const sanitizedTitle = title.replace(/[^a-zA-Z0-9-_]/g, '_');
+
+    // Create a new IVS channel
+    const channelParams = {
+      latencyMode: 'LOW', // ✅ Real-Time Streaming
+      type: 'STANDARD',
+      name: sanitizedTitle,
+    };
+    const { channel, streamKey } = await ivs
+      .createChannel(channelParams)
+      .promise();
+    // Create an IVS Chat Room
+    const chatParams = {
+      name: `chat-${sanitizedTitle}`,
+    };
+    const chatRoom = await ivsChat.createRoom(chatParams).promise();
+    // Save stream and chat room details in MongoDB
     const newStream = new Stream({
       title,
-      playbackUrl:
-        'https://6b879004354a.ap-south-1.playback.live-video.net/api/video/v1/ap-south-1.116981808722.channel.bFpcIjcN1i86.m3u8',
-      streamKey: 'sk_ap-south-1_4LeRY8OAJOep_ZX2Eci4lRcTxA8SND1PngxjmaeNKSY',
-      isLive: false,
-      upcomming: true,
+      playbackUrl: channel.playbackUrl,
+      ingestUrl: channel.ingestEndpoint,
+      streamId: streamKey.value,
+      chatRoomId: chatRoom.arn, // Save chat room ID
+      channelArn: channel.arn, // Save channel ARN
       startDate,
+      courseId,
       standard,
       boardId,
     });
-
-    const data = await newStream.save();
-
-    return res
-      .status(200)
-      .json(new APISuccess(200, 'Live created successfully', data));
+    await newStream.save();
+    res.status(201).json(newStream);
   } catch (error) {
-    return handleError(res, error);
+    console.error('Error creating stream:', error);
+    res.status(500).json({ message: 'Failed to create stream', error });
   }
 };
 
@@ -46,15 +96,14 @@ exports.getAllUpcomingStream = async (req, res) => {
   const query = { upcomming: true };
   const data = req.body;
   try {
-    if (data.standard) {
-      query.standard = data.standard;
-    }
-    if (data.boardId) {
-      query.boardId = data.boardId;
-    }
-    const result = await Stream.find(query)
+    const query = req.body;
+    const result = await Stream.find({
+      ...query,
+      startDate: { $gte: new Date() },
+    })
       .populate('standard')
       .populate('boardId')
+      .populate('courseId')
       .sort('startDate -1');
     return res
       .status(200)
@@ -85,8 +134,8 @@ exports.startStream = async (req, res) => {
     const live = await Stream.findByIdAndUpdate(
       id,
       {
-        isLive: true,
         upcomming: false,
+        isLive: true,
       },
       {
         new: true,
@@ -104,7 +153,7 @@ exports.startStream = async (req, res) => {
 //stop stream route
 exports.stopStream = async (req, res) => {
   try {
-    await Stream.updateMany({}, { isLive: false });
+    await Stream.updateMany({}, { isLive: false, upcomming: false });
     return res.status(200).json(new APISuccess(200, 'Live session ended!'));
   } catch (error) {
     console.log('==========================', error);
@@ -114,7 +163,10 @@ exports.stopStream = async (req, res) => {
 
 exports.fetchStream = async (req, res) => {
   try {
-    const stream = await Stream.findOne({ isLive: true });
+    const stream = await Stream.findOne({
+      isLive: true,
+      upcomming: false,
+    });
     if (!stream) return res.status(404).json({ message: 'No live session' });
     res.status(200).json({ message: 'Live session ', data: stream });
   } catch (error) {
@@ -133,23 +185,25 @@ exports.fetchUpcomingLive = async (req, res) => {
 };
 
 exports.getViewers = async (req, res) => {
-  const channelArn = 'arn:aws:ivs:ap-south-1:116981808722:channel/bFpcIjcN1i86'; // Replace with your IVS Channel ARN
+  const { channelArn } = req.body;
 
   const params = {
-    MetricName: 'ConcurrentViews',
     Namespace: 'AWS/IVS',
-    Dimensions: [{ Name: 'channel', Value: channelArn }],
-    StartTime: new Date(Date.now() - 5 * 60 * 1000),
-    EndTime: new Date(),
-    Period: 60, // 1-minute intervals
-    Statistics: ['Sum'], // "Sum" gives the best real-time count
+    MetricName: 'ConcurrentViews',
+    Dimensions: [{ Name: 'Channel', Value: channelArn }],
+    StartTime: new Date(Date.now() - 10 * 60000), // 10 minutes ago
+    EndTime: new Date(), // Current time
+    Period: 60, // Fetch data for the last 1 minute
+    Statistics: ['Maximum'],
   };
 
   try {
     const data = await cloudwatch.getMetricStatistics(params).promise();
 
+    console.log('Viewer count data:', data);
+
     const viewerCount =
-      data.Datapoints.length > 0 ? Math.round(data.Datapoints[0].Sum) : 0;
+      data.Datapoints.length > 0 ? Math.round(data.Datapoints[0].Maximum) : 0;
 
     res.status(200).json({
       message: 'Fetch viewers count successfully',
@@ -158,5 +212,33 @@ exports.getViewers = async (req, res) => {
   } catch (error) {
     console.error('Error fetching viewer count:', error);
     res.status(500).json({ error: 'Failed to fetch viewer count' });
+  }
+};
+
+exports.getChatToken = async (req, res) => {
+  try {
+    const { chatRoomArn, userId } = req.body; // Get from request
+
+    if (!chatRoomArn || !userId) {
+      return res
+        .status(400)
+        .json({ error: 'chatRoomArn and userId are required' });
+    }
+
+    const response = await ivsChat
+      .createChatToken({
+        roomIdentifier: chatRoomArn,
+        userId: userId,
+        capabilities: ['SEND_MESSAGE', 'DISCONNECT_USER'],
+        sessionDurationInMinutes: 60, // Token valid for 1 hour
+      })
+      .promise();
+
+    res.json({ token: response.token });
+  } catch (error) {
+    console.error('Error generating chat token:', error);
+    res
+      .status(500)
+      .json({ error: 'Failed to generate chat token', details: error.message });
   }
 };
