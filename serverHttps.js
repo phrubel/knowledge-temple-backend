@@ -1,3 +1,4 @@
+require("dotenv").config();
 const app = require("./src/app");
 const https = require("https");
 const fs = require("fs");
