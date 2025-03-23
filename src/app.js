@@ -1,14 +1,14 @@
-const express = require('express');
-const expressRateLimit = require('express-rate-limit');
-const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
-const hpp = require('hpp');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const { APIError } = require('./utils/responseHandler');
-const { validateHeaders } = require('./middlewares/authMiddlewares');
-const Constants = require('./constants/appConstants');
+const express = require("express");
+const expressRateLimit = require("express-rate-limit");
+const helmet = require("helmet");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
+const hpp = require("hpp");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const { APIError } = require("./utils/responseHandler");
+const { validateHeaders } = require("./middlewares/authMiddlewares");
+const Constants = require("./constants/appConstants");
 // const { initializeFirebaseAdmin } = require('./utils/pushNotificationHandler');
 
 const app = express();
@@ -16,11 +16,11 @@ const app = express();
 app.use(
   cors({
     origin: [
-      'http://localhost:8080',
-      'https://admin.knowledgetemple.in',
-      'https://www.admin.knowledgetemple.in',
-      'www.admin.knowledgetemple.in',
-      'admin.knowledgetemple.in',
+      "http://localhost:8080",
+      "https://admin.knowledgetemple.in",
+      "https://www.admin.knowledgetemple.in",
+      "www.admin.knowledgetemple.in",
+      "admin.knowledgetemple.in",
     ], // Set specific origin
     credentials: true,
     optionsSuccessStatus: 200,
@@ -57,22 +57,22 @@ app.use(hpp());
 // app.use(encryptResponse);
 
 // version v1
-const userApiV1 = require('./apis/v1/userIndex');
-app.use('/api/v1/user', validateHeaders, userApiV1);
+const userApiV1 = require("./apis/v1/userIndex");
+app.use("/api/v1/user", validateHeaders, userApiV1);
 
-const adminApiV1 = require('./apis/v1/adminIndex');
-app.use('/api/v1/admin', adminApiV1);
+const adminApiV1 = require("./apis/v1/adminIndex");
+app.use("/api/v1/admin", adminApiV1);
 
-const commonApiV1 = require('./apis/v1/commonIndex');
-app.use('/api/v1', commonApiV1);
+const commonApiV1 = require("./apis/v1/commonIndex");
+app.use("/api/v1", commonApiV1);
 
-app.get('/', async (req, res) => {
-  return res.status(200).send({ message: 'Welcome to Knowledge Temple API.' });
+app.get("/", async (req, res) => {
+  return res.status(200).send({ message: "Welcome to Knowledge Temple API." });
 });
 
 // handle undefined Routes
 app.use((req, res) => {
-  const err = new APIError(404, 'Undefined Route.').toJson();
+  const err = new APIError(404, "Undefined Route.").toJson();
   return res.status(404).json(err);
 });
 
@@ -80,7 +80,7 @@ app.use((req, res) => {
 mongoose
   .connect(Constants.DATABASE)
   .then((con) => {
-    console.log('Database Connected.');
+    console.log("Database Connected.");
   })
   .catch((err) => {
     console.log(err);

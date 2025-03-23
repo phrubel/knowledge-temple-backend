@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "serverHttp.js",
   "scripts": {
-    "start": "node serverHttp",
-    "dev": "nodemon serverHttp"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "author": "",
   "license": "ISC",
