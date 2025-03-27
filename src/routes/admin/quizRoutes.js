@@ -10,13 +10,23 @@ const {
   quizResults,
   getEligibleOfrQuizzes,
   getUserQuizResults,
+  getQuizLeaderboard,
+  updateQuizLeaderboard,
 } = require("../../controllers/admin/quizcontroller");
+const upload = require("../../utils/certificateUpload");
 
 // Route to create a new quiz
 router.post("/create", authorization(true), createQuiz);
 
 // Route to get all quizzes
 router.get("/all", authorization(true), getAllQuizzes);
+router.get("/quiz-leader-board", authorization(true), getQuizLeaderboard);
+router.post(
+  "/certificate/:id",
+  upload.single("certificate"),
+  authorization(true),
+  updateQuizLeaderboard
+);
 
 // Route to get a quiz by ID
 router.get("/:id", authorization(true), getQuizById);
@@ -32,7 +42,7 @@ router.post("/results", authorization(true), quizResults);
 router.post(
   "/getEligibleOfrQuizzes",
   authorization(true),
-  getEligibleOfrQuizzes,
+  getEligibleOfrQuizzes
 );
 
 router.post("/getUserQuizResults", authorization(true), getUserQuizResults);
