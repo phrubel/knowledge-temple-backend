@@ -25,6 +25,10 @@ const StreamSchema = new mongoose.Schema({
     ref: 'Course',
     required: true,
   },
+  recordingConfigArn: {
+    type: String,
+    required: true,
+  },
 });
 
 const Stream = mongoose.model('Stream', StreamSchema);

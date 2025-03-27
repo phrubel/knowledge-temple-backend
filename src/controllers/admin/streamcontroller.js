@@ -2,50 +2,25 @@ const { ivs, cloudwatch, ivsChat } = require('../../config/awsConfig');
 const Stream = require('../../models/streamModel');
 const { APISuccess } = require('../../utils/responseHandler');
 
-// exports.createUpcomingLive = async (req, res) => {
-//   try {
-//     const { title, startDate, standard, boardId } = req.body;
+const waitForRecordingConfig = async (configArn) => {
+  const maxRetries = 5; // Number of times to check the status
+  let retries = 0;
 
-//     if (!title || !startDate || !standard || !boardId) {
-//       throw new APIError(400, 'All fields are required');
-//     }
-//     // Create a new IVS channel
-//     const channelParams = {
-//       latencyMode: 'REALTIME', // ✅ Real-Time Streaming
-//       type: 'BASIC',
-//       name: title,
-//     };
+  while (retries < maxRetries) {
+    const { recordingConfiguration } = await ivs
+      .getRecordingConfiguration({ arn: configArn })
+      .promise();
 
-//     const { channel, streamKey } = await ivs
-//       .createChannel(channelParams)
-//       .promise();
+    console.log('Recording Configuration:', recordingConfiguration);
+    if (recordingConfiguration.state === 'ACTIVE') {
+      return true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds before checking again
+    retries++;
+  }
 
-//     // Create an IVS Chat Room
-//     const chatParams = {
-//       name: `chat-${title}`,
-//     };
-//     const chatRoom = await ivsChat.createRoom(chatParams).promise();
-
-//     // Save stream and chat room details in MongoDB
-//     const newStream = new Stream({
-//       title,
-//       playbackUrl: channel.playbackUrl,
-//       ingestUrl: channel.ingestEndpoint,
-//       streamId: streamKey.value,
-//       chatRoomId: chatRoom.arn, // Save chat room ID
-//       channelArn: channel.arn, // Save channel ARN
-//       startDate,
-//       standard,
-//       boardId,
-//     });
-
-//     await newStream.save();
-//     res.status(201).json(newStream);
-//   } catch (error) {
-//     console.error('Error creating stream:', error);
-//     res.status(500).json({ message: 'Failed to create stream', error });
-//   }
-// };
+  throw new Error('Recording Configuration did not become ACTIVE in time');
+};
 
 exports.createUpcomingLive = async (req, res) => {
   try {
@@ -56,12 +31,27 @@ exports.createUpcomingLive = async (req, res) => {
 
     // Sanitize the title for the channel name
     const sanitizedTitle = title.replace(/[^a-zA-Z0-9-_]/g, '_');
+    // const dateFolder = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
+    const recordingConfigParams = {
+      destinationConfiguration: {
+        s3: {
+          bucketName: 'knowledgetemple',
+        },
+      },
+      name: `recording-${sanitizedTitle}-date-${Date.now()}`,
+    };
+    const recordingConfig = await ivs
+      .createRecordingConfiguration(recordingConfigParams)
+      .promise();
+
+    await waitForRecordingConfig(recordingConfig?.recordingConfiguration?.arn);
     // Create a new IVS channel
     const channelParams = {
       latencyMode: 'LOW', // ✅ Real-Time Streaming
       type: 'STANDARD',
       name: sanitizedTitle,
+      recordingConfigurationArn: recordingConfig?.recordingConfiguration?.arn, // Attach recording configuration
     };
     const { channel, streamKey } = await ivs
       .createChannel(channelParams)
@@ -79,6 +69,7 @@ exports.createUpcomingLive = async (req, res) => {
       streamId: streamKey.value,
       chatRoomId: chatRoom.arn, // Save chat room ID
       channelArn: channel.arn, // Save channel ARN
+      recordingConfigArn: recordingConfig?.recordingConfiguration?.arn,
       startDate,
       courseId,
       standard,
@@ -93,14 +84,9 @@ exports.createUpcomingLive = async (req, res) => {
 };
 
 exports.getAllUpcomingStream = async (req, res) => {
-  const query = { upcomming: true };
-  const data = req.body;
   try {
     const query = req.body;
-    const result = await Stream.find({
-      ...query,
-      startDate: { $gte: new Date() },
-    })
+    const result = await Stream.find({ upcomming: true })
       .populate('standard')
       .populate('boardId')
       .populate('courseId')
