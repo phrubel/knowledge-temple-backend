@@ -85,8 +85,8 @@ exports.createUpcomingLive = async (req, res) => {
 
 exports.getAllUpcomingStream = async (req, res) => {
   try {
-    const query = req.body;
-    const result = await Stream.find({ upcomming: true })
+    const query = req.body || {};
+    const result = await Stream.find(query)
       .populate('standard')
       .populate('boardId')
       .populate('courseId')

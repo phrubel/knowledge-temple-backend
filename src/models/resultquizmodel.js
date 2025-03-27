@@ -17,21 +17,17 @@ const ResultSchema = new mongoose.Schema(
         questionId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Quiz.Question",
-          // required: true,
         },
         selectedAnswer: {
           type: String,
-          // required: true,
         },
         isCorrect: {
           type: Boolean,
-          // required: true,
         },
       },
     ],
     score: {
       type: Number,
-      // required: true,
       default: 0,
     }, // Total score
     startedAt: {
@@ -39,6 +35,10 @@ const ResultSchema = new mongoose.Schema(
     },
     submittedAt: {
       type: Date,
+    },
+    certificate: {
+      type: String, // Store a URL or certificate ID
+      default: null, // Initially null, can be updated after quiz completion
     },
   },
   {
