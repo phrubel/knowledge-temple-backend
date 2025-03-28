@@ -519,3 +519,25 @@ exports.quizWinners = async function (req, res) {
     return handleError(res, error);
   }
 };
+
+exports.getCertificate = async function (req, res) {
+  try {
+    const { userId } = req.params;
+
+    const certificate = await ResultQuiz.find({ userId })
+      .select('quizId certificate')
+      .populate('quizId', 'title');
+
+    if (!certificate) {
+      throw new APIError(400, 'You have not attempted any quiz yet.');
+    }
+
+    return res.status(200).json(
+      new APISuccess(200, 'Certificate fetched successfully', {
+        certificate: certificate,
+      })
+    );
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
