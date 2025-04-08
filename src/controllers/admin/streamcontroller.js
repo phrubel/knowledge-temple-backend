@@ -2,25 +2,26 @@ const { ivs, cloudwatch, ivsChat } = require('../../config/awsConfig');
 const Stream = require('../../models/streamModel');
 const { APISuccess } = require('../../utils/responseHandler');
 
-const waitForRecordingConfig = async (configArn) => {
-  const maxRetries = 5; // Number of times to check the status
-  let retries = 0;
+// recording configuration
+// const waitForRecordingConfig = async (configArn) => {
+//   const maxRetries = 5; // Number of times to check the status
+//   let retries = 0;
 
-  while (retries < maxRetries) {
-    const { recordingConfiguration } = await ivs
-      .getRecordingConfiguration({ arn: configArn })
-      .promise();
+//   while (retries < maxRetries) {
+//     const { recordingConfiguration } = await ivs
+//       .getRecordingConfiguration({ arn: configArn })
+//       .promise();
 
-    console.log('Recording Configuration:', recordingConfiguration);
-    if (recordingConfiguration.state === 'ACTIVE') {
-      return true;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds before checking again
-    retries++;
-  }
+//     console.log('Recording Configuration:', recordingConfiguration);
+//     if (recordingConfiguration.state === 'ACTIVE') {
+//       return true;
+//     }
+//     await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds before checking again
+//     retries++;
+//   }
 
-  throw new Error('Recording Configuration did not become ACTIVE in time');
-};
+//   throw new Error('Recording Configuration did not become ACTIVE in time');
+// };
 
 exports.createUpcomingLive = async (req, res) => {
   try {
@@ -33,25 +34,26 @@ exports.createUpcomingLive = async (req, res) => {
     const sanitizedTitle = title.replace(/[^a-zA-Z0-9-_]/g, '_');
     // const dateFolder = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
-    const recordingConfigParams = {
-      destinationConfiguration: {
-        s3: {
-          bucketName: 'knowledgetemple',
-        },
-      },
-      name: `recording-${sanitizedTitle}-date-${Date.now()}`,
-    };
-    const recordingConfig = await ivs
-      .createRecordingConfiguration(recordingConfigParams)
-      .promise();
+    // record config params
+    // const recordingConfigParams = {
+    //   destinationConfiguration: {
+    //     s3: {
+    //       bucketName: 'knowledgetemple',
+    //     },
+    //   },
+    //   name: `recording-${sanitizedTitle}-date-${Date.now()}`,
+    // };
+    // const recordingConfig = await ivs
+    //   .createRecordingConfiguration(recordingConfigParams)
+    //   .promise();
 
-    await waitForRecordingConfig(recordingConfig?.recordingConfiguration?.arn);
+    // await waitForRecordingConfig(recordingConfig?.recordingConfiguration?.arn);
     // Create a new IVS channel
     const channelParams = {
       latencyMode: 'LOW', // ✅ Real-Time Streaming
       type: 'STANDARD',
       name: sanitizedTitle,
-      recordingConfigurationArn: recordingConfig?.recordingConfiguration?.arn, // Attach recording configuration
+      // recordingConfigurationArn: recordingConfig?.recordingConfiguration?.arn, // Attach recording configuration
     };
     const { channel, streamKey } = await ivs
       .createChannel(channelParams)
@@ -69,7 +71,8 @@ exports.createUpcomingLive = async (req, res) => {
       streamId: streamKey.value,
       chatRoomId: chatRoom.arn, // Save chat room ID
       channelArn: channel.arn, // Save channel ARN
-      recordingConfigArn: recordingConfig?.recordingConfiguration?.arn,
+      // record config arn
+      // recordingConfigArn: recordingConfig?.recordingConfiguration?.arn,
       startDate,
       courseId,
       standard,
